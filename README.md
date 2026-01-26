@@ -1,4 +1,4 @@
-# AutoHotkey Macro Recorder
+# AutoHotkey(AHK) Macro Recorder
 
 A GUI-based AutoHotkey v2 script to record and replay keyboard and mouse macros.
 
