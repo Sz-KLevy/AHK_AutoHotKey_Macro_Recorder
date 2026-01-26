@@ -1,0 +1,11 @@
+# Ignore compiled executables
+*.exe
+
+# Ignore temporary Ahk2Exe files
+*.ahk.ahk2exe
+
+# Ignore log files
+*.log
+
+# Ignore temp files
+*.tmp
