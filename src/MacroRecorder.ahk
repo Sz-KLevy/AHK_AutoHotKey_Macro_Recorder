@@ -75,10 +75,206 @@ DefaultSetting := Setting()
 CurrentLog := DataLog()
 CurrentSetting := DefaultSetting
 
+/*-----------------------------------------------GUI--------------------------------------------------------------*/
+class AppGUI{
 
-DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr") ; Fixes mouse offset issues
+	__New(){
+		AppGUI.Main.Build()
+		AppGUI.Options.Build()
+	}
+
+	class Main{
+		static Window := Gui()
+		static CurrentStatusText := this.Window.AddText()
+
+		static Build(){
+			this.Window := Gui("+AlwaysOnTop", "Macro Recorder")
+			this.Window.SetFont("s10")
+			
+			
+			width := "w100"
+			height := " h40"
+			RecordStartButton := this.Window.AddButton("w50" height " X0" , "Start Recording")
+			RecordEndButton := this.Window.AddButton("w50" height " X+" , "Stop Recording")
+			PlayButton := this.Window.AddButton(width height " X+", "Play")
+			SaveButton := this.Window.AddButton(width height " X+", "Save")
+			LoadButton := this.Window.AddButton(width height " X+", "Load")
+			this.CurrentStatusText := this.Window.AddText("w400 h40 XM X0 Center", "Status: Idle")
+
+			width := "w" 400//3
+			EditButton := this.Window.AddButton(width height " XM X0 Y+150", "Edit")
+			OptionsButton := this.Window.AddButton(width height " X+", "Options")	
+			CreditsButton := this.Window.AddButton(width height " X+", "Credits")		
+
+
+			RecordStartButton.OnEvent("Click", this.ButtonStartRecord)
+			RecordEndButton.OnEvent("Click", this.ButtonEndRecord)
+			PlayButton.OnEvent("Click", this.ButtonPlay)
+			SaveButton.OnEvent("Click", this.ButtonSave)
+			LoadButton.OnEvent("Click", this.ButtonLoad)
+			
+			EditButton.OnEvent("Click", this.ButtonEdit)
+			OptionsButton.OnEvent("Click", this.ButtonOptions)
+			CreditsButton.OnEvent("Click", this.ButtonCredits)
+		}
+
+
+		static Show(){
+			this.Window.Show("Center w400 h300")
+			
+		}
+
+		static Hide(){
+			this.Window.Hide()
+		}
+
+/*---------------------------------------------------Functionality-----------------------*/
+		static ButtonStartRecord(*){
+			if(State.IsRecording){
+				return
+			}
+			Record()
+		}
+
+		static ButtonEndRecord(*){
+			global ih
+			if(!State.IsRecording){
+				return
+			}
+			ih.Stop()
+		}
+
+
+		static ButtonPlay(*){
+			Play()
+		}
+
+		static ButtonSave(*){
+			MsgBox "Not implemented yet"
+		}
+		static ButtonLoad(*){
+			MsgBox "Not implemented yet"
+		}
+
+		static ButtonEdit(*){
+			MsgBox "Not implemented yet"
+		}
+
+		static ButtonOptions(*){
+			AppGUI.Options.Show()
+		}
+
+		static ButtonCredits(*){
+			MsgBox "Not implemented yet"
+		}
+
+		static UpdateStatus(CurrentState){
+
+			if(CurrentState.IsRecording){
+				this.CurrentStatusText.Text := "Status: Recording"
+			}
+			else if(CurrentState.IsPlaying){
+				this.CurrentStatusText.Text := "Status: Playing"
+			}
+			else{
+				this.CurrentStatusText.Text := "Status: Idle"
+			}
+		}
+	}
+
+	class Options{
+		static Window := Gui()
+		static Settings := Map()
+
+		static Build(){
+			global CurrentSetting
+			this.Window := Gui("+AlwaysOnTop", "Macro Recorder")
+			this.Window.SetFont("s10")
+
+			this.Window.AddText("w120", "Record Start Hotkey:")
+			this.Settings["RecordStart"] := this.Window.AddEdit("w120", CurrentSetting.RecordStartKey)
+
+			this.Window.AddText("w120", "Record End Hotkey:")
+			this.Settings["RecordEnd"] := this.Window.AddEdit("w120", CurrentSetting.RecordEndKey)
+
+			this.Window.AddText("w120", "Play Hotkey:")
+			this.Settings["Play"] := this.Window.AddEdit("w120", CurrentSetting.PlayStartKey)
+
+			this.Window.AddText("w120", "MouseMode:")
+			this.Settings["MouseMode"] := this.Window.AddDropDownList("w120", ["Screen", "Window", "Client"])
+			this.Settings["MouseMode"].Text := CurrentSetting.MousePositionMode
+
+			UpdateSettingsButton := this.Window.AddButton("w120", "Update settings")
+			UpdateSettingsButton.OnEvent("Click", this.UpdateSettings)
+		}
+
+		static Show(){
+			this.Window.Show("Center w400 h300")
+			
+		}
+
+		static Hide(){
+			this.Window.Hide()
+		}
+
+		static UpdateSettings(*){
+			global CurrentSetting
+			
+			if(State.IsRecording or State.IsPlaying){
+				return
+			}
+
+
+			; Deleting previous hotkeys
+			Hotkey(CurrentSetting.RecordStartKey, "Off")
+			Hotkey(CurrentSetting.PlayStartKey, "Off")
+			Hotkey(CurrentSetting.RecordEndKey, "Off")
+
+			; Installing new hotkeys
+			Try{
+				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Record(), "On")	;Checks, if the key could be a hotkey, removes it's function instantly if it can
+			}
+			Catch{
+				MsgBox "Failed to change Record End Hotkey"
+			}
+			Else{
+				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, "Off")
+				CurrentSetting.RecordEndKey := AppGUI.Options.Settings["RecordEnd"].Text
+			}
+
+			Try{
+				Hotkey(AppGUI.Options.Settings["RecordStart"].Text, (hk) => Record(), "On")
+			}
+			Catch{
+				MsgBox "Failed to change Record Start Hotkey"
+				Hotkey(CurrentSetting.RecordStartKey, (hk) => Record(), "On")
+			}
+			Else{
+				CurrentSetting.RecordStartKey := AppGUI.Options.Settings["RecordStart"].Text
+			}
+
+			Try{
+				Hotkey(AppGUI.Options.Settings["Play"].Text, (hk) => Play(), "On")
+			}
+			Catch{
+				MsgBox "Failed to change Play Start Key"
+				Hotkey(CurrentSetting.PlayStartKey, (hk) => Play(), "On")
+			}
+			Else{
+				CurrentSetting.PlayStartKey := AppGUI.Options.Settings["Play"].Text
+			}
+
+			CurrentSetting.MousePositionMode := AppGUI.Options.Settings["MouseMode"].Text
+		}
+	}
+}
+
+AppGUI()
+AppGUI.Main.Show()
+
 /*--------------------------------------------------------------Input reciving---------------------------*/
 /*----------------------Mouse inputs---------------------------------*/
+DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr") ; Fixes mouse offset issues
 
 class TimeCounter{
 	__New(){
@@ -108,7 +304,7 @@ MousePositionLogger(){
 	CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
 }
 
-/*------------Mouse activity recording---------*/
+/*------------Mouse activity recording---------*/	;Sending DownR might be bette
 /*Only runs, when recording*/
 #HotIf State.IsRecording
 /*Capture Standard Buttons (Down & Up)*/
@@ -175,17 +371,18 @@ KeyUpHandler(func_ih,VK,SC){
 
 Hotkey(CurrentSetting.RecordStartKey,(ThisHotKey) => Record())
 Record(){
-
 	; Prevents double starts
 	if(State.IsRecording or State.IsPlaying){
 		return
-	}
+	}	
 
 	global ih
 	global Counter
 	global CurrentLog
 	global CurrentSetting
 
+
+	State.IsRecording := true
 	CurrentLog.RecordLog := []
 	CurrentLog.MouseRecordLog := []
 	State.KeysDown.Clear()
@@ -193,8 +390,7 @@ Record(){
 	Counter.Start()
 	SetTimer MousePositionLogger, CurrentSetting.MouseRecordingFrequency
 	ih.Start()
-	State.IsRecording := true
-	UpdateStatus()
+	AppGUI.Main.UpdateStatus(State)
 	ih.Wait()
 }
 
@@ -212,7 +408,7 @@ OnRecordEnd(func_ih){
 		}
 	}
 	State.KeysDown.Clear()
-	UpdateStatus()
+	AppGUI.Main.UpdateStatus(State)
 }
 
 
@@ -238,7 +434,7 @@ Play(){
 	}
 
 	State.IsPlaying := true
-	UpdateStatus()
+	AppGUI.Main.UpdateStatus(State)
 
 	StartTime := A_TickCount
 
@@ -277,125 +473,8 @@ Play(){
 	}
 	SetStoreCapsLockMode(true)
 	State.IsPlaying := false
-	UpdateStatus()
+	AppGUI.Main.UpdateStatus(State)
 }
-
-/*-----------------------------------------------GUI look------------------------------*/
-MainGui := Gui("+AlwaysOnTop", "Macro Recorder")
-
-MainGui.SetFont("s10")
-
-MainGui.AddText("w120", "Record Start Hotkey:")
-EditRecordStart := MainGui.AddEdit("w120", CurrentSetting.RecordStartKey)
-
-MainGui.AddText("w120", "Record End Hotkey:")
-EditRecordEnd := MainGui.AddEdit("w120", CurrentSetting.RecordEndKey)
-
-MainGui.AddText("w120", "Play Hotkey:")
-EditPlay := MainGui.AddEdit("w120", CurrentSetting.PlayStartKey)
-
-MainGui.AddText("w120", "MouseMode:")
-EditMouseMode := MainGui.AddDropDownList("w120", ["Screen", "Window", "Client"])
-EditMouseMode.Text := CurrentSetting.MousePositionMode 
-
-UpdateSettingsButton := MainGui.AddButton("w120", "Update Settings")
-UpdateSettingsButton.OnEvent("Click", UpdateSettings)
-
-
-RecordStartButton := MainGui.AddButton("w120", "Start Recording")
-RecordStartButton.OnEvent("Click", ButtonStartRecord)
-RecordEndButton := MainGui.AddButton("w120", "End Recording")
-RecordEndButton.OnEvent("Click", ButtonEndRecord)
-PlayStartButton := MainGui.AddButton("w120", "Play")
-PlayStartButton.OnEvent("Click", ButtonStartPlay)
-
-CurrentStatusText := MainGui.AddText("w120", "Status: Idle")
-
-MainGui.Show("w300 h500")
-
-/*----------GUI functions--------------*/
-
-ButtonStartRecord(*){
-	if(State.IsRecording){
-		MsgBox "Already recording"
-		return
-	}
-	Record()
-}
-
-ButtonEndRecord(*){
-	global ih
-	if(!State.IsRecording){
-		return
-	}
-	ih.Stop()
-}
-
-ButtonStartPlay(*){
-	Play()
-}
-
-UpdateStatus(){
-	global CurrentStatusText
-
-	if(State.IsRecording){
-		CurrentStatusText.Text := "Status: Recording"
-	}
-	else if(State.IsPlaying){
-		CurrentStatusText.Text := "Status: Playing"
-	}
-	else{
-		CurrentStatusText.Text := "Status: Idle"
-	}
-}
-
-UpdateSettings(*){
-	global EditRecord, EditPlay, EditMouseMode
-	global CurrentSetting
-
-	/*Deleting previous hotkeys*/
-	Hotkey(CurrentSetting.RecordStartKey, "Off")
-	Hotkey(CurrentSetting.PlayStartKey, "Off")
-	Hotkey(CurrentSetting.RecordEndKey, "Off")
-
-	/*Installing new hotkeys*/
-	Try{
-		Hotkey(EditRecordEnd.Text, (hk) => Record(), "On")	;Checks, if the key could be a hotkey, removes it's function instantly if it can
-	}
-	Catch{
-		MsgBox "Failed to change Record End Hotkey"
-	}
-	Else{
-		Hotkey(EditRecordEnd.Text, "Off")
-		CurrentSetting.RecordEndKey := EditRecordEnd.Text
-	}
-
-	Try{
-		Hotkey(EditRecordStart.Text, (hk) => Record(), "On")
-	}
-	Catch{
-		MsgBox "Failed to change Record Start Hotkey"
-		Hotkey(CurrentSetting.RecordStartKey, (hk) => Record(), "On")
-	}
-	Else{
-		CurrentSetting.RecordStartKey := EditRecordStart.Text
-	}
-
-	Try{
-		Hotkey(EditPlay.Text, (hk) => Play(), "On")
-	}
-	Catch{
-		MsgBox "Failed to change Play Start Key"
-		Hotkey(CurrentSetting.PlayStartKey, (hk) => Play(), "On")
-	}
-	Else{
-		CurrentSetting.PlayStartKey := EditPlay.Text
-	}
-
-	CurrentSetting.MousePositionMode := EditMouseMode.Text
-
-}
-
 
 
 /*--------------------------------------------------------Developer tools---------------------------*/
@@ -403,7 +482,7 @@ UpdateSettings(*){
 /*Close the file*/
 !d::
 {
-MsgBox "Stopping " A_ScriptName
+; MsgBox "Stopping " A_ScriptName
 ExitApp
 }
 
