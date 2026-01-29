@@ -2,9 +2,12 @@
 
 ## [Unreleased]
 - Add macro save/load feature
-- GUI rework
 - More options
 - Add record editing
+
+## [v0.3-alpha] - 2026-01-29
+- Reworked the look of the GUI
+- Refactored the GUI
 
 ## [v0.2-alpha] - 2026-01-28
 - Refactored the code, to improve readability
