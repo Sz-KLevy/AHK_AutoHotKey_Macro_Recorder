@@ -5,7 +5,8 @@ A GUI-based AutoHotkey v2 script to record and replay keyboard and mouse macros.
 ## Features
 - Record keyboard and mouse input
 - Replay macros with precise timing
-- GUI controls for start/stop/play
+- Save and loading function
+- GUI controlls
 - Configurable hotkeys and mouse position mode
 
 ## Requirements
