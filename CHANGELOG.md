@@ -1,11 +1,18 @@
 # Changelog
 
 ## [Unreleased]
-- Add macro save/load feature
 - More options
 - Add record editing
+- Credits
 
-## [v0.3-alpha] - 2026-01-29
+## [v1.1-alpha] - 2026-01-30
+- Mouse actions are now recorded together with mouse movements, instead of keyboard inputs.
+- When a mouse action is recorded, it's position is also recorded.
+- Added save feature
+- Added load feature
+- 2026-01-29 changelog now considered [v1.0-alpha], instead of [v0.3-alpha]
+
+## [v1.0-alpha] - 2026-01-29
 - Reworked the look of the GUI
 - Refactored the GUI
 
