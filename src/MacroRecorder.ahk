@@ -12,6 +12,7 @@ class Setting{
 
 	MouseRecordingFrequency := 20
 }
+DefaultSetting := Setting()
 
 class State{
 	static IsRecording := false
@@ -70,8 +71,6 @@ class DataLog{
 	}
 }
 
-DefaultSetting := Setting()
-
 CurrentLog := DataLog()
 CurrentSetting := DefaultSetting
 
@@ -88,7 +87,7 @@ class AppGUI{
 		static CurrentStatusText := this.Window.AddText()
 
 		static Build(){
-			this.Window := Gui("+AlwaysOnTop", "Macro Recorder")
+			this.Window := Gui("", "Macro Recorder")
 			this.Window.SetFont("s10")
 			
 			
@@ -150,10 +149,10 @@ class AppGUI{
 		}
 
 		static ButtonSave(*){
-			MsgBox "Not implemented yet"
+			Controlls.Save()
 		}
 		static ButtonLoad(*){
-			MsgBox "Not implemented yet"
+			Controlls.Load()
 		}
 
 		static ButtonEdit(*){
@@ -304,29 +303,89 @@ MousePositionLogger(){
 	CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
 }
 
-/*------------Mouse activity recording---------*/	;Sending DownR might be bette
+/*------------Mouse activity recording---------*/
 /*Only runs, when recording*/
 #HotIf State.IsRecording
 /*Capture Standard Buttons (Down & Up)*/
-~LButton::CurrentLog.RecordLog.Push([Counter.Time(), "key", "LButton", "down"])
-~LButton Up::CurrentLog.RecordLog.Push([Counter.Time(), "key", "LButton", "up"])
+~LButton::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "LButton", "down"])
+}
+~LButton Up::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "LButton", "up"])
+}
 
-~RButton::CurrentLog.RecordLog.Push([Counter.Time(), "key", "RButton", "down"])
-~RButton Up::CurrentLog.RecordLog.Push([Counter.Time(), "key", "RButton", "up"])
+~RButton::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "RButton", "down"])
+}
+~RButton Up::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "RButton", "up"])
+}
 
-~MButton::CurrentLog.RecordLog.Push([Counter.Time(), "key", "MButton", "down"])
-~MButton Up::CurrentLog.RecordLog.Push([Counter.Time(), "key", "MButton", "up"])
+~MButton::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "MButton", "down"])
+}
+~MButton Up::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "MButton", "up"])
+}
 
 /* Capture Side Buttons (XButtons) */
-~XButton1::CurrentLog.RecordLog.Push([Counter.Time(), "key", "XButton1", "down"])
-~XButton1 Up::CurrentLog.RecordLog.Push([Counter.Time(), "key", "XButton1", "up"])
+~XButton1::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "XButton1", "down"])
+}
+~XButton1 Up::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "XButton1", "up"])
+}
 
-~XButton2::CurrentLog.RecordLog.Push([Counter.Time(), "key", "XButton2", "down"])
-~XButton2 Up::CurrentLog.RecordLog.Push([Counter.Time(), "key", "XButton2", "up"])
+~XButton2::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "XButton2", "down"])
+}
+~XButton2 Up::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "XButton2", "up"])
+}
 
-/* Capture Scroll Wheel */
-~WheelUp::CurrentLog.RecordLog.Push([Counter.Time(), "key", "WheelUp", "down"])
-~WheelDown::CurrentLog.RecordLog.Push([Counter.Time(), "key", "WheelDown", "down"]) 
+/* Capture Scroll Wheel */	;While in other mouse activity, the position may be relevant, I'm doubtfull that it is relevant here, but for consistency I record the position here too
+~WheelUp::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "WheelUp", "down"])
+}
+~WheelDown::{
+CoordMode "Mouse", CurrentSetting.MousePositionMode
+MouseGetPos(&xpos,&ypos)
+CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "WheelDown", "down"])
+}
 
 #HotIf ;
 
@@ -475,6 +534,113 @@ Play(){
 	State.IsPlaying := false
 	AppGUI.Main.UpdateStatus(State)
 }
+
+class Controlls{
+	static Save(){
+		if(State.IsRecording or State.IsPlaying){
+			return
+		}
+		global CurrentLog
+		
+		SelectedFile := FileSelect("S",,"Select a file to save as.", "*.txt")
+		if(SubStr(SelectedFile, -4) != ".txt"){
+			SelectedFile := SelectedFile ".txt"
+		}
+		WriteFile := FileOpen(SelectedFile, "w")
+		WriteFile.WriteLine("Keyboard")
+		for index, entry in CurrentLog.RecordLog{
+			for index2, EntryElement in entry{
+				if(index2 = entry.Length){
+					WriteFile.Write(EntryElement)
+				}
+				else WriteFile.Write(EntryElement " ")	
+			}
+			WriteFile.WriteLine("")
+		}
+		WriteFile.WriteLine("Mouse")
+		for index, entry in CurrentLog.MouseRecordLog{
+			for index2, EntryElement in entry{
+				if(index2 = entry.Length){
+					WriteFile.Write(EntryElement)
+				}
+				else WriteFile.Write(EntryElement " ")	
+			}
+			WriteFile.WriteLine("")
+		}
+		WriteFile.Write("END")
+		WriteFile.Close()
+	}
+
+	static Load(){
+		if(State.IsRecording or State.IsPlaying){
+			return
+		}
+		global CurrentLog
+		
+		SelectedFile := FileSelect("1",,"Select a file to load", "*txt")
+		if(SubStr(SelectedFile, -4) != ".txt"){
+			MsgBox "Not .txt file"
+			return
+		}
+		ReadFile := FileOpen(SelectedFile, "r")
+		
+		ReadFile.Seek(-4,2)	; Goes before the end of the file, if there is an enter, or anything after END, it wouldn't run
+		ReadFile.ReadLine()
+		if(ReadFile.ReadLine() != "END"){
+			MsgBox "Failed to load the file, didn't found the `"END`""
+			return
+		}
+		ReadFile.Seek(0,0)	; Goes to the start of the file
+		KeyboardStartPosition := 0
+		while(true){
+			Line := ReadFile.ReadLine()
+			if(Line = "Keyboard"){
+				KeyboardStartPosition := ReadFile.Pos
+				break
+			}
+			else if(Line = "END"){
+				MsgBox "Failed to load the file, didn't found the `"Keyboard`""
+				return
+			}
+		}
+		while(true){
+			Line := ReadFile.ReadLine()
+			if(Line = "Mouse"){
+				break
+			}
+			else if(Line = "END"){
+				MsgBox "Failed to load the file, didn't found the `"Mouse`""
+				return
+			}
+		}
+
+	/*--------------------Actual reading of the file----------*/
+		CurrentLog.RecordLog := []
+		CurrentLog.MouseRecordLog := []
+		ReadFile.Seek(KeyboardStartPosition,0)
+		while(true){
+			Line := ReadFile.ReadLine()
+			if(Line = "Mouse"){
+				break
+			}
+			Entry := StrSplit(Line,' ')
+			CurrentLog.RecordLog.Push(Entry)
+		}
+		while(true){
+			Line := ReadFile.ReadLine()
+			if(Line = "End"){
+				break
+			}
+			Entry := StrSplit(Line,' ')
+			CurrentLog.MouseRecordLog.Push(Entry)
+		}
+		ReadFile.Close()
+		MsgBox "Succesfull Load"
+	}
+}
+
+
+
 
 
 /*--------------------------------------------------------Developer tools---------------------------*/
