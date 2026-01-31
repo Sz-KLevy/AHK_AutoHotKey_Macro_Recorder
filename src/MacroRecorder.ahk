@@ -27,7 +27,7 @@ class DataLog{
 
 	/*------------------Record handlers--------------------------*/
 	/*Merging the logs, so it can be handled simultaniously*/
-	/*Using quicksort, which might not be as effective in this special case as otherways (insertion short might be faster).
+	/*Using quicksort, which might not be as effective in this special case as otherways (insertion sort might be faster).
 	You could "guess" where you should put the RecordLog values in the MouseRecordLog with good accuracy.*/
 	QuickSort(arr, left, right){
 		if (left >= right){
@@ -628,7 +628,7 @@ class Controlls{
 		}
 		while(true){
 			Line := ReadFile.ReadLine()
-			if(Line = "End"){
+			if(Line = "END"){
 				break
 			}
 			Entry := StrSplit(Line,' ')
