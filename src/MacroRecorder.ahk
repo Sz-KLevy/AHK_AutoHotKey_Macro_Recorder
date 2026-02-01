@@ -133,11 +133,7 @@ class AppGUI{
 		}
 
 		static ButtonEndRecord(*){
-			global ih
-			if(!State.IsRecording){
-				return
-			}
-			ih.Stop()
+			RecordStop()
 		}
 
 
@@ -402,7 +398,7 @@ KeyDownHandler(func_ih,VK,SC){
 	global ih
 
 	if (KeyName = CurrentSetting.RecordEndKey){
-		ih.Stop()
+		RecordStop()
 	}
 	else if(KeyName != CurrentSetting.PlayStartKey && KeyName != CurrentSetting.RecordStartKey && State.KeysDown.Has(KeyName) = false){
 		CurrentLog.RecordLog.Push([Counter.Time(),"key",KeyName,"down"])
@@ -448,6 +444,13 @@ Record(){
 	ih.Start()
 	AppGUI.Main.UpdateStatus(State)
 	ih.Wait()
+}
+
+RecordStop(){
+	global ih
+	if(State.IsRecording = true){
+		ih.Stop()
+	}
 }
 
 OnRecordEnd(func_ih){
