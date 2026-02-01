@@ -5,6 +5,10 @@
 - Add record editing
 - Credits
 
+## [v1.2-alpha] - 2026-02-01
+- Added credits
+- Minor GUI class refactor
+
 ## [v1.1-alpha] - 2026-01-30
 - Mouse actions are now recorded together with mouse movements, instead of keyboard inputs.
 - When a mouse action is recorded, it's position is also recorded.
