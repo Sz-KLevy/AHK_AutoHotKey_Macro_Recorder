@@ -80,6 +80,7 @@ class AppGUI{
 	static BuildAll(){
 		AppGUI.Main.Build()
 		AppGUI.Options.Build()
+		AppGUI.Credits.Build()
 	}
 
 	class Main{
@@ -157,7 +158,7 @@ class AppGUI{
 		}
 
 		static ButtonCredits(*){
-			MsgBox "Not implemented yet","",262144
+			AppGUI.Credits.Show()
 		}
 
 		static UpdateStatus(CurrentState){
@@ -180,7 +181,7 @@ class AppGUI{
 
 		static Build(){
 			global CurrentSetting
-			this.Window := Gui("+AlwaysOnTop", "Macro Recorder", this)	; Assigning AppGUI.Options as an event handler
+			this.Window := Gui("+AlwaysOnTop", "Macro Recorder Options", this)	; Assigning AppGUI.Options as an event handler
 			this.Window.SetFont("s10")
 
 			this.Window.AddText("w120", "Record Start Hotkey:")
@@ -257,6 +258,46 @@ class AppGUI{
 			}
 
 			CurrentSetting.MousePositionMode := AppGUI.Options.Settings["MouseMode"].Text
+		}
+	}
+	
+	class Credits{
+		static Window := ""
+
+		static Build(){
+			this.Window := Gui("+AlwaysOnTop", "Macro Recorder Credits", this)	; Assigning AppGUI.Credits as an event handler
+			this.Window.SetFont("s10")
+
+			this.Window.AddText("w500", "
+( 
+
+ ..aooo..o..       ..oooooooooo                           oooo    oooo 
+d8P'     'Y8     d'""""""d888'                            '888   .8P'  
+Y8bo.                  .888P                                888  d8'    
+ '"Y88o.             d888'                                  88888[      
+     `"Y8b          .888P               8888888        888`88b.    
+o       .d8P      d888'        ...P                       888   '88b.  
+ '8""8888P'   .8888888888P                       o888o  o888o
+
+)")
+		
+		this.Window.AddText("w500", "Version: 1.2-alpha")
+
+		this.Window.AddText("XM","Github page: ")
+		Link := this.Window.Add("Text", "X+ CBlue", "https://github.com/Sz-KLevy/AHK_AutoHotKey_Macro_Recorder")
+		Link.OnEvent("Click", "OpenLink")
+		}
+
+		static OpenLink(*){
+			Run("https://github.com/Sz-KLevy/AHK_AutoHotKey_Macro_Recorder")
+		}
+
+		static Show(){
+			this.Window.Show("Center w500 h250")
+		}
+
+		static Hide(){
+			this.Window.Hide()
 		}
 	}
 }
