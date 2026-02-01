@@ -77,17 +77,17 @@ CurrentSetting := DefaultSetting
 /*-----------------------------------------------GUI--------------------------------------------------------------*/
 class AppGUI{
 
-	__New(){
+	static BuildAll(){
 		AppGUI.Main.Build()
 		AppGUI.Options.Build()
 	}
 
 	class Main{
-		static Window := Gui()
-		static CurrentStatusText := this.Window.AddText()
+		static Window := ""
+		static CurrentStatusText := ""
 
 		static Build(){
-			this.Window := Gui("", "Macro Recorder")
+			this.Window := Gui("", "Macro Recorder", this)	; Assigning AppGUI.Main as an event handler
 			this.Window.SetFont("s10")
 			
 			
@@ -106,15 +106,15 @@ class AppGUI{
 			CreditsButton := this.Window.AddButton(width height " X+", "Credits")		
 
 
-			RecordStartButton.OnEvent("Click", this.ButtonStartRecord)
-			RecordEndButton.OnEvent("Click", this.ButtonEndRecord)
-			PlayButton.OnEvent("Click", this.ButtonPlay)
-			SaveButton.OnEvent("Click", this.ButtonSave)
-			LoadButton.OnEvent("Click", this.ButtonLoad)
+			RecordStartButton.OnEvent("Click", "ButtonStartRecord")
+			RecordEndButton.OnEvent("Click", "ButtonEndRecord")
+			PlayButton.OnEvent("Click", "ButtonPlay")
+			SaveButton.OnEvent("Click", "ButtonSave")
+			LoadButton.OnEvent("Click", "ButtonLoad")
 			
-			EditButton.OnEvent("Click", this.ButtonEdit)
-			OptionsButton.OnEvent("Click", this.ButtonOptions)
-			CreditsButton.OnEvent("Click", this.ButtonCredits)
+			EditButton.OnEvent("Click", "ButtonEdit")
+			OptionsButton.OnEvent("Click", "ButtonOptions")
+			CreditsButton.OnEvent("Click", "ButtonCredits")
 		}
 
 
@@ -129,9 +129,6 @@ class AppGUI{
 
 /*---------------------------------------------------Functionality-----------------------*/
 		static ButtonStartRecord(*){
-			if(State.IsRecording){
-				return
-			}
 			Record()
 		}
 
@@ -156,7 +153,7 @@ class AppGUI{
 		}
 
 		static ButtonEdit(*){
-			MsgBox "Not implemented yet"
+			MsgBox "Not implemented yet","",262144
 		}
 
 		static ButtonOptions(*){
@@ -164,7 +161,7 @@ class AppGUI{
 		}
 
 		static ButtonCredits(*){
-			MsgBox "Not implemented yet"
+			MsgBox "Not implemented yet","",262144
 		}
 
 		static UpdateStatus(CurrentState){
@@ -182,12 +179,12 @@ class AppGUI{
 	}
 
 	class Options{
-		static Window := Gui()
+		static Window := ""
 		static Settings := Map()
 
 		static Build(){
 			global CurrentSetting
-			this.Window := Gui("+AlwaysOnTop", "Macro Recorder")
+			this.Window := Gui("+AlwaysOnTop", "Macro Recorder", this)	; Assigning AppGUI.Options as an event handler
 			this.Window.SetFont("s10")
 
 			this.Window.AddText("w120", "Record Start Hotkey:")
@@ -204,7 +201,7 @@ class AppGUI{
 			this.Settings["MouseMode"].Text := CurrentSetting.MousePositionMode
 
 			UpdateSettingsButton := this.Window.AddButton("w120", "Update settings")
-			UpdateSettingsButton.OnEvent("Click", this.UpdateSettings)
+			UpdateSettingsButton.OnEvent("Click", "UpdateSettings")
 		}
 
 		static Show(){
@@ -234,7 +231,7 @@ class AppGUI{
 				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Record(), "On")	;Checks, if the key could be a hotkey, removes it's function instantly if it can
 			}
 			Catch{
-				MsgBox "Failed to change Record End Hotkey"
+				MsgBox "Failed to change Record End Hotkey","Error",262144
 			}
 			Else{
 				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, "Off")
@@ -245,7 +242,7 @@ class AppGUI{
 				Hotkey(AppGUI.Options.Settings["RecordStart"].Text, (hk) => Record(), "On")
 			}
 			Catch{
-				MsgBox "Failed to change Record Start Hotkey"
+				MsgBox "Failed to change Record Start Hotkey","Error",262144
 				Hotkey(CurrentSetting.RecordStartKey, (hk) => Record(), "On")
 			}
 			Else{
@@ -256,7 +253,7 @@ class AppGUI{
 				Hotkey(AppGUI.Options.Settings["Play"].Text, (hk) => Play(), "On")
 			}
 			Catch{
-				MsgBox "Failed to change Play Start Key"
+				MsgBox "Failed to change Play Start Key","Error",262144
 				Hotkey(CurrentSetting.PlayStartKey, (hk) => Play(), "On")
 			}
 			Else{
@@ -268,7 +265,7 @@ class AppGUI{
 	}
 }
 
-AppGUI()
+AppGUI.BuildAll()
 AppGUI.Main.Show()
 
 /*--------------------------------------------------------------Input reciving---------------------------*/
@@ -488,7 +485,7 @@ Play(){
 	CombinedLog := CurrentLog.MergeLogs()
 
 	if(CombinedLog.Length = 0){
-		MsgBox "No recording found"
+		MsgBox "No recording found","",262144
 		return
 	}
 
@@ -579,7 +576,7 @@ class Controlls{
 		
 		SelectedFile := FileSelect("1",,"Select a file to load", "*txt")
 		if(SubStr(SelectedFile, -4) != ".txt"){
-			MsgBox "Not .txt file"
+			MsgBox "Not .txt file","Error",262144
 			return
 		}
 		ReadFile := FileOpen(SelectedFile, "r")
@@ -587,7 +584,7 @@ class Controlls{
 		ReadFile.Seek(-4,2)	; Goes before the end of the file, if there is an enter, or anything after END, it wouldn't run
 		ReadFile.ReadLine()
 		if(ReadFile.ReadLine() != "END"){
-			MsgBox "Failed to load the file, didn't found the `"END`""
+			MsgBox "Failed to load the file, didn't found the `"END`"","File load error",262144
 			return
 		}
 		ReadFile.Seek(0,0)	; Goes to the start of the file
@@ -599,7 +596,7 @@ class Controlls{
 				break
 			}
 			else if(Line = "END"){
-				MsgBox "Failed to load the file, didn't found the `"Keyboard`""
+				MsgBox "Failed to load the file, didn't found the `"Keyboard`"","File load error",262144
 				return
 			}
 		}
@@ -609,7 +606,7 @@ class Controlls{
 				break
 			}
 			else if(Line = "END"){
-				MsgBox "Failed to load the file, didn't found the `"Mouse`""
+				MsgBox "Failed to load the file, didn't found the `"Mouse`"","File load error",262144
 				return
 			}
 		}
@@ -635,7 +632,7 @@ class Controlls{
 			CurrentLog.MouseRecordLog.Push(Entry)
 		}
 		ReadFile.Close()
-		MsgBox "Succesfull Load"
+		MsgBox "Succesfull Load","",262144
 	}
 }
 
@@ -648,7 +645,7 @@ class Controlls{
 /*Close the file*/
 !d::
 {
-; MsgBox "Stopping " A_ScriptName
+; MsgBox "Stopping " A_ScriptName,"",262144
 ExitApp
 }
 
