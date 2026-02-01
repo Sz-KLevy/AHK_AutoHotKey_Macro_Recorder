@@ -142,10 +142,10 @@ class AppGUI{
 		}
 
 		static ButtonSave(*){
-			Controlls.Save()
+			Controls.Save()
 		}
 		static ButtonLoad(*){
-			Controlls.Load()
+			Controls.Load()
 		}
 
 		static ButtonEdit(*){
@@ -535,7 +535,7 @@ Play(){
 	AppGUI.Main.UpdateStatus(State)
 }
 
-class Controlls{
+class Controls{
 	static Save(){
 		if(State.IsRecording or State.IsPlaying){
 			return
