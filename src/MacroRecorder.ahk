@@ -27,45 +27,32 @@ class DataLog{
 
 	/*------------------Record handlers--------------------------*/
 	/*Merging the logs, so it can be handled simultaniously*/
-	/*Using quicksort, which might not be as effective in this special case as otherways (insertion sort might be faster).
-	You could "guess" where you should put the RecordLog values in the MouseRecordLog with good accuracy.*/
-	QuickSort(arr, left, right){
-		if (left >= right){
-			return
-		}
-
-		pivot := arr[(left + right) // 2][1]
- 		i := left
-		j := right
-
-		while (i <= j) {
-			while (arr[i][1] < pivot)
-				i++
-			while (arr[j][1] > pivot)
-				j--
-			if (i <= j) {
-				temp := arr[i]
-				arr[i] := arr[j]
-				arr[j] := temp
-				i++
-				j--
-			}
-		}
-		if (left < j){
-			this.QuickSort(arr, left, j)
-		}
-		if (i < right){
-			this.QuickSort(arr, i, right)
-		}
-	}
-
 	MergeLogs(){
 		CombinedLog :=[]
-		CombinedLog.Push(this.RecordLog*)
-		CombinedLog.Push(this.MouseRecordLog*)
 
-		if (CombinedLog.Length != 0)
-			this.QuickSort(CombinedLog, 1, CombinedLog.Length)
+		i := 1
+		j := 1
+		lenRecord := this.RecordLog.Length
+		lenMouse := this.MouseRecordLog.Length
+
+		while (i <= lenRecord && j <= lenMouse) {
+			if (this.RecordLog[i][1] <= this.MouseRecordLog[j][1]) {
+				CombinedLog.Push(this.RecordLog[i])
+				i++
+			} else {
+				CombinedLog.Push(this.MouseRecordLog[j])
+				j++
+			}
+		}
+
+		while (i <= lenRecord){
+			CombinedLog.Push(this.RecordLog[i])
+			i++
+		}
+		while (j <= lenMouse){
+			CombinedLog.Push(this.MouseRecordLog[j])
+			j++
+		}
 
 		return CombinedLog
 	}
