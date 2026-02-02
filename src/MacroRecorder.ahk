@@ -62,7 +62,7 @@ class DataLog{
 	PushableEntryMaker(ArrayEntry){
 		PushableEntry := {}
 			for index, value in ArrayEntry{
-				ArrayEntry[index] := StrSplit(ArrayEntry[index], ':')
+				ArrayEntry[index] := StrSplit(ArrayEntry[index], ':')	; Works, because ':' recorded as {shift} and '.'. In the very specific case where there is ':' key, there will be error.
 				Property := ArrayEntry[index][1]
 				Value := ArrayEntry[index][2]
 
