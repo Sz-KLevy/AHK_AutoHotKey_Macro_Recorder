@@ -29,7 +29,7 @@ class DataLog{
 
 	/*------------------Record handlers--------------------------*/
 	/*Merging the logs, so it can be handled simultaniously*/
-	MergeLogs(){
+	MergeLogs(){	; The used logs are time-sorted
 		CombinedLog :=[]
 
 		i := 1
@@ -82,6 +82,7 @@ class DataLog{
 CurrentLog := DataLog()
 CurrentSetting := DefaultSetting
 
+Controls.Setup()
 /*-----------------------------------------------GUI--------------------------------------------------------------*/
 class AppGUI{
 
@@ -138,16 +139,16 @@ class AppGUI{
 
 /*---------------------------------------------------Functionality-----------------------*/
 		static ButtonStartRecord(*){
-			Record()
+			Controls.Record.Start()
 		}
 
 		static ButtonEndRecord(*){
-			RecordStop()
+			Controls.Record.Stop()
 		}
 
 
 		static ButtonPlay(*){
-			Play()
+			Controls.Play()
 		}
 
 		static ButtonSave(*){
@@ -233,7 +234,7 @@ class AppGUI{
 
 			; Installing new hotkeys
 			Try{
-				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Record(), "On")	;Checks, if the key could be a hotkey, removes it's function instantly if it can
+				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Controls.Record.Start(), "On")	;Checks, if the key could be a hotkey, removes it's function instantly if it can
 			}
 			Catch{
 				MsgBox "Failed to change Record End Hotkey","Error",262144
@@ -244,22 +245,22 @@ class AppGUI{
 			}
 
 			Try{
-				Hotkey(AppGUI.Options.Settings["RecordStart"].Text, (hk) => Record(), "On")
+				Hotkey(AppGUI.Options.Settings["RecordStart"].Text, (hk) => Controls.Record.Start(), "On")
 			}
 			Catch{
 				MsgBox "Failed to change Record Start Hotkey","Error",262144
-				Hotkey(CurrentSetting.RecordStartKey, (hk) => Record(), "On")
+				Hotkey(CurrentSetting.RecordStartKey, (hk) => Controls.Record.Start(), "On")
 			}
 			Else{
 				CurrentSetting.RecordStartKey := AppGUI.Options.Settings["RecordStart"].Text
 			}
 
 			Try{
-				Hotkey(AppGUI.Options.Settings["Play"].Text, (hk) => Play(), "On")
+				Hotkey(AppGUI.Options.Settings["Play"].Text, (hk) => Controls.Play(), "On")
 			}
 			Catch{
 				MsgBox "Failed to change Play Start Key","Error",262144
-				Hotkey(CurrentSetting.PlayStartKey, (hk) => Play(), "On")
+				Hotkey(CurrentSetting.PlayStartKey, (hk) => Controls.Play(), "On")
 			}
 			Else{
 				CurrentSetting.PlayStartKey := AppGUI.Options.Settings["Play"].Text
@@ -310,13 +311,6 @@ o       .d8P      d888'        ...P                       888   '88b.
 	}
 }
 
-AppGUI.BuildAll()
-AppGUI.Main.Show()
-
-/*--------------------------------------------------------------Input reciving---------------------------*/
-/*----------------------Mouse inputs---------------------------------*/
-DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr") ; Fixes mouse offset issues
-
 class TimeCounter{
 	__New(){
 		this.StartTime := 0
@@ -333,20 +327,10 @@ class TimeCounter{
 
 Counter := TimeCounter()
 
-/*Mouse position recording*/
-/*Works fine for now, but might change it to either record position if it moved x pixels*/
-MousePositionLogger(){
-	global Counter
-	global CurrentLog
-	global CurrentSetting
-
-	CoordMode "Mouse", CurrentSetting.MousePositionMode
-	MouseGetPos(&xpos,&ypos)
-	CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-}
-
+/*--------------------------------------------------------------------------Mouse outside of class------------*/
 /*------------Mouse activity recording---------*/
 /*Only runs, when recording*/
+/* Putting the activity recording to the MousHook would be possible, if we leave the hotif outside, and call the funciton when it's active
 #HotIf State.IsRecording
 /*Capture Standard Buttons (Down & Up)*/
 ~LButton::{
@@ -431,158 +415,173 @@ CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "WheelDown
 
 #HotIf ;
 
-/*----------------Keyboard inputs-----------------------*/
-/*Records all keyboard inputs, without affecting the inputs itself*/
-ih := InputHook("V")
-ih.KeyOpt("{All}", "+N")
-ih.OnKeyDown := KeyDownHandler
-ih.OnKeyUp := KeyUpHandler
-ih.OnEnd := OnRecordEnd
-
-KeyDownHandler(func_ih,VK,SC){
-	KeyName := GetKeyName(Format("vk{:x}sc{:x}",VK,SC))
-	global CurrentSetting
-	global CurrentLog
-	global Counter
-	global ih
-
-	if (KeyName = CurrentSetting.RecordEndKey){
-		RecordStop()
-	}
-	else if(KeyName != CurrentSetting.PlayStartKey && KeyName != CurrentSetting.RecordStartKey && State.KeysDown.Has(KeyName) = false){
-		CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "down"})
-		State.KeysDown[KeyName] := true
-	}
-
-}
-KeyUpHandler(func_ih,VK,SC){
-	KeyName:= GetKeyName(Format("vk{:x}sc{:x}",VK,SC))
-	global CurrentSetting
-	global CurrentLog
-	global Counter
-
-	if(KeyName != CurrentSetting.RecordStartKey && KeyName != CurrentSetting.PlayStartKey){
-		CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "up"})
-		State.KeysDown.Delete(KeyName)
-	}
-}
-
-
-/*--------------------------------------------------------Record and play----------------------------*/
-
-Hotkey(CurrentSetting.RecordStartKey,(ThisHotKey) => Record())
-Record(){
-	; Prevents double starts
-	if(State.IsRecording or State.IsPlaying){
-		return
-	}	
-
-	global ih
-	global Counter
-	global CurrentLog
-	global CurrentSetting
-
-
-	State.IsRecording := true
-	CurrentLog.RecordLog := []
-	CurrentLog.MouseRecordLog := []
-	State.KeysDown.Clear()
-	
-	Counter.Start()
-	SetTimer MousePositionLogger, CurrentSetting.MouseRecordingFrequency
-	ih.Start()
-	AppGUI.Main.UpdateStatus(State)
-	ih.Wait()
-}
-
-RecordStop(){
-	global ih
-	if(State.IsRecording = true){
-		ih.Stop()
-	}
-}
-
-OnRecordEnd(func_ih){
-	global CurrentLog
-	global Counter
-
-	State.IsRecording := false
-	SetTimer MousePositionLogger, 0
-
-	/*Unstuck keys*/
-	for KeyName, IsDown in State.KeysDown{
-		if(IsDown){
-			CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "up"})
-		}
-	}
-	State.KeysDown.Clear()
-	AppGUI.Main.UpdateStatus(State)
-}
-
-
-
-
-Hotkey(CurrentSetting.PlayStartKey,(ThisHotKey) => Play())
-Play(){
-	; Prevents double starts
-	if(State.IsRecording or State.IsPlaying){
-		return
-	}
-
-	global CurrentSetting
-	global CurrentLog
-	CoordMode "Mouse", CurrentSetting.MousePositionMode
-	SetStoreCapsLockMode(false)
-	SetKeyDelay -1, -1
-	CombinedLog := CurrentLog.MergeLogs()
-
-	if(CombinedLog.Length = 0){
-		MsgBox "No recording found","",262144
-		return
-	}
-
-	State.IsPlaying := true
-	AppGUI.Main.UpdateStatus(State)
-
-	StartTime := A_TickCount
-
-	for index,entry in CombinedLog{
-		TargetTime := entry.Time
-		SourceType := entry.Type
-
-
-		elapsed := A_TickCount - StartTime
-		SleepNeeded := TargetTime - elapsed
-		
-		if(SleepNeeded > 10){	;The input precision will vary a bit, because of this, but sleep is varied at 0-20ms
-			Sleep(SleepNeeded)
-		}
-
-		if (SourceType = "key"){
-			CurrentKey := entry.Key		
-			KeyState := entry.State
-			/*Capslock configuration and key sending*/
-			if(CurrentKey = "CapsLock"){
-				if(KeyState = "down"){
-					/*Switches states*/
-					SetCapsLockState(!GetKeyState("Capslock", "T"))
-				}
-			}
-			else{
-				SendEvent("{Blind}{" CurrentKey " " KeyState "}")
-			}
-		}
-		else if(SourceType = "mouse_position"){
-			MouseMove(entry.x, entry.y, 0)
-		}
-
-	}
-	SetStoreCapsLockMode(true)
-	State.IsPlaying := false
-	AppGUI.Main.UpdateStatus(State)
-}
 
 class Controls{
+	static Setup(){
+		DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr") ; Fixes mouse offset issues
+		Hotkey(CurrentSetting.RecordStartKey,(ThisHotKey) => Controls.Record.Start())
+		Hotkey(CurrentSetting.PlayStartKey,(ThisHotKey) => Controls.Play())
+		this.Record.Hook.Build()
+		AppGUI.BuildAll()
+		AppGUI.Main.Show()
+	}
+
+	static Play(){
+		; Prevents double starts
+		if(State.IsRecording or State.IsPlaying){
+			return
+		}
+	
+		global CurrentSetting
+		global CurrentLog
+		CoordMode "Mouse", CurrentSetting.MousePositionMode
+		SetStoreCapsLockMode(false)
+		SetKeyDelay -1, -1
+		CombinedLog := CurrentLog.MergeLogs()
+	
+		if(CombinedLog.Length = 0){
+			MsgBox "No recording found","",262144
+			return
+		}
+	
+		State.IsPlaying := true
+		AppGUI.Main.UpdateStatus(State)
+	
+		StartTime := A_TickCount
+	
+		for index,entry in CombinedLog{
+			TargetTime := entry.Time
+			SourceType := entry.Type
+	
+	
+			elapsed := A_TickCount - StartTime
+			SleepNeeded := TargetTime - elapsed
+			
+			if(SleepNeeded > 10){	;The input precision will vary a bit, because of this, but sleep is varied at 0-20ms
+				Sleep(SleepNeeded)
+			}
+	
+			if (SourceType = "key"){
+				CurrentKey := entry.Key		
+				KeyState := entry.State
+				/*Capslock configuration and key sending*/
+				if(CurrentKey = "CapsLock"){
+					if(KeyState = "down"){
+						/*Switches states*/
+						SetCapsLockState(!GetKeyState("Capslock", "T"))
+					}
+				}
+				else{
+					SendEvent("{Blind}{" CurrentKey " " KeyState "}")
+				}
+			}
+			else if(SourceType = "mouse_position"){
+				MouseMove(entry.x, entry.y, 0)
+			}
+	
+		}
+		SetStoreCapsLockMode(true)
+		State.IsPlaying := false
+		AppGUI.Main.UpdateStatus(State)
+	}
+
+	class Record{
+		static Start(){
+			; Prevents double starts
+			if(State.IsRecording or State.IsPlaying){
+				return
+			}	
+
+			global Counter
+			global CurrentLog
+			global CurrentSetting
+		
+		
+			State.IsRecording := true
+			CurrentLog.RecordLog := []
+			CurrentLog.MouseRecordLog := []
+			State.KeysDown.Clear()
+			
+			Counter.Start()
+			SetTimer Controls.Record.MouseHook.MousePositionLogger.Bind(this), CurrentSetting.MouseRecordingFrequency
+			this.Hook.ih.Start()
+			AppGUI.Main.UpdateStatus(State)
+		}
+		static Stop(){
+			if(State.IsRecording = true){
+				this.Hook.ih.Stop()
+			}
+		}
+		static OnRecordEnd(func_ih){
+			global CurrentLog
+			global Counter
+		
+			State.IsRecording := false
+			SetTimer Controls.Record.MouseHook.MousePositionLogger.Bind(this), 0
+		
+			/*Unstuck keys*/
+			for KeyName, IsDown in State.KeysDown{
+				if(IsDown){
+					CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "up"})
+				}
+			}
+			State.KeysDown.Clear()
+			AppGUI.Main.UpdateStatus(State)
+		}
+		class Hook{
+			/*----------------Keyboard inputs-----------------------*/
+			/*Records all keyboard inputs, without affecting the inputs itself*/
+			static ih := InputHook("V")
+
+			static Build(){
+				this.ih.KeyOpt("{All}", "+N")
+				this.ih.OnKeyDown := this.KeyDownHandler.Bind(this)
+				this.ih.OnKeyUp := this.KeyUpHandler.Bind(this)
+				this.ih.OnEnd := Controls.Record.OnRecordEnd.Bind(this)
+			}
+
+			static KeyDownHandler(func_ih,VK,SC){
+				KeyName := GetKeyName(Format("vk{:x}sc{:x}",VK,SC))
+				global CurrentSetting
+				global CurrentLog
+				global Counter
+			
+				if (KeyName = CurrentSetting.RecordEndKey){
+					Controls.Record.Stop()
+				}
+				else if(KeyName != CurrentSetting.PlayStartKey && KeyName != CurrentSetting.RecordStartKey && State.KeysDown.Has(KeyName) = false){
+					CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "down"})
+					State.KeysDown[KeyName] := true
+				}
+			
+			}
+			static KeyUpHandler(func_ih,VK,SC){
+				KeyName:= GetKeyName(Format("vk{:x}sc{:x}",VK,SC))
+				global CurrentSetting
+				global CurrentLog
+				global Counter
+			
+				if(KeyName != CurrentSetting.RecordStartKey && KeyName != CurrentSetting.PlayStartKey){
+					CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "up"})
+					State.KeysDown.Delete(KeyName)
+				}
+			}
+		}
+		class MouseHook{		
+			/*Mouse position recording*/
+			/*Works fine for now, but might change it to either record position if it moved x pixels*/
+			static MousePositionLogger(){
+				global Counter
+				global CurrentLog
+				global CurrentSetting
+			
+				CoordMode "Mouse", CurrentSetting.MousePositionMode
+				MouseGetPos(&xpos,&ypos)
+				CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+			}
+		}
+	}
+
 	static Save(){
 		if(State.IsRecording or State.IsPlaying){
 			return
