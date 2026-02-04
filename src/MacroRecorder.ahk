@@ -4,6 +4,8 @@
 
 /*-----------------------------------------------Code---------------------------*/
 /*--------------------------------------Variables, options and such--------------------------*/
+Version := "1.3-alpha"
+
 class Setting{
 	RecordStartKey := "F1"
 	RecordEndKey := "F1"	; A fake hotkey, from the user perspective, it works as one
@@ -21,8 +23,8 @@ class State{
 }
 
 class DataLog{
-	RecordLog :=[]
-	MouseRecordLog :=[]
+	RecordLog :=[]	;Time: ,Type:(key), Key:, State:(up/down)
+	MouseRecordLog :=[]	;Time: ,Type:(key/mouse_position), Key/x:, State/y:
 
 
 	/*------------------Record handlers--------------------------*/
@@ -36,7 +38,7 @@ class DataLog{
 		lenMouse := this.MouseRecordLog.Length
 
 		while (i <= lenRecord && j <= lenMouse) {
-			if (this.RecordLog[i][1] <= this.MouseRecordLog[j][1]) {
+			if (this.RecordLog[i].Time <= this.MouseRecordLog[j].Time) {
 				CombinedLog.Push(this.RecordLog[i])
 				i++
 			} else {
@@ -55,6 +57,25 @@ class DataLog{
 		}
 
 		return CombinedLog
+	}
+
+	PushableEntryMaker(ArrayEntry){
+		PushableEntry := {}
+			for index, value in ArrayEntry{
+				ArrayEntry[index] := StrSplit(ArrayEntry[index], ':')	; Works, because ':' recorded as {shift} and '.'. In the very specific case where there is ':' key, there will be error.
+				Property := ArrayEntry[index][1]
+				Value := ArrayEntry[index][2]
+
+				switch Property{
+				case "Time": PushableEntry.Time := Value
+				case "Type": PushableEntry.Type := Value
+				case "Key": PushableEntry.Key := Value
+				case "State": PushableEntry.State := Value
+				case "x": PushableEntry.x := Value
+				case "y": PushableEntry.y := Value
+				}
+			}
+		return PushableEntry
 	}
 }
 
@@ -267,8 +288,8 @@ o       .d8P      d888'        ...P                       888   '88b.
  '8""8888P'   .8888888888P                       o888o  o888o
 
 )")
-		
-		this.Window.AddText("w500", "Version: 1.2-alpha")
+		global Version
+		this.Window.AddText("w500", "Version: " Version)
 
 		this.Window.AddText("XM","Github page: ")
 		Link := this.Window.Add("Text", "X+ CBlue", "https://github.com/Sz-KLevy/AHK_AutoHotKey_Macro_Recorder")
@@ -321,7 +342,7 @@ MousePositionLogger(){
 
 	CoordMode "Mouse", CurrentSetting.MousePositionMode
 	MouseGetPos(&xpos,&ypos)
-	CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
+	CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
 }
 
 /*------------Mouse activity recording---------*/
@@ -331,81 +352,81 @@ MousePositionLogger(){
 ~LButton::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "LButton", "down"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "LButton",State: "down"})
 }
 ~LButton Up::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "LButton", "up"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "LButton",State: "up"})
 }
 
 ~RButton::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "RButton", "down"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "RButton",State: "down"})
 }
 ~RButton Up::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "RButton", "up"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "RButton",State: "up"})
 }
 
 ~MButton::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "MButton", "down"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "MButton",State: "down"})
 }
 ~MButton Up::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "MButton", "up"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "MButton",State: "up"})
 }
 
 /* Capture Side Buttons (XButtons) */
 ~XButton1::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "XButton1", "down"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "XButton1",State: "down"})
 }
 ~XButton1 Up::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "XButton1", "up"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "XButton1",State: "up"})
 }
 
 ~XButton2::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "XButton2", "down"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "XButton2",State: "down"})
 }
 ~XButton2 Up::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "XButton2", "up"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "XButton2",State: "up"})
 }
 
 /* Capture Scroll Wheel */	;While in other mouse activity, the position may be relevant, I'm doubtfull that it is relevant here, but for consistency I record the position here too
 ~WheelUp::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "WheelUp", "down"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "WheelUp",State: "down"})
 }
 ~WheelDown::{
 CoordMode "Mouse", CurrentSetting.MousePositionMode
 MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push([Counter.Time(),"mouse_position",xpos,ypos])
-CurrentLog.MouseRecordLog.Push([Counter.Time(), "key", "WheelDown", "down"])
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "WheelDown",State: "down"})
 }
 
 #HotIf ;
@@ -429,7 +450,7 @@ KeyDownHandler(func_ih,VK,SC){
 		RecordStop()
 	}
 	else if(KeyName != CurrentSetting.PlayStartKey && KeyName != CurrentSetting.RecordStartKey && State.KeysDown.Has(KeyName) = false){
-		CurrentLog.RecordLog.Push([Counter.Time(),"key",KeyName,"down"])
+		CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "down"})
 		State.KeysDown[KeyName] := true
 	}
 
@@ -441,7 +462,7 @@ KeyUpHandler(func_ih,VK,SC){
 	global Counter
 
 	if(KeyName != CurrentSetting.RecordStartKey && KeyName != CurrentSetting.PlayStartKey){
-		CurrentLog.RecordLog.Push([counter.Time(),"key",KeyName,"up"])
+		CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "up"})
 		State.KeysDown.Delete(KeyName)
 	}
 }
@@ -491,7 +512,7 @@ OnRecordEnd(func_ih){
 	/*Unstuck keys*/
 	for KeyName, IsDown in State.KeysDown{
 		if(IsDown){
-			CurrentLog.RecordLog.Push([Counter.Time(),"key",KeyName, "up"])
+			CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "up"})
 		}
 	}
 	State.KeysDown.Clear()
@@ -526,8 +547,8 @@ Play(){
 	StartTime := A_TickCount
 
 	for index,entry in CombinedLog{
-		TargetTime := entry[1]
-		SourceType := entry[2]
+		TargetTime := entry.Time
+		SourceType := entry.Type
 
 
 		elapsed := A_TickCount - StartTime
@@ -538,8 +559,8 @@ Play(){
 		}
 
 		if (SourceType = "key"){
-			CurrentKey := entry[3]		
-			KeyState := entry[4]
+			CurrentKey := entry.Key		
+			KeyState := entry.State
 			/*Capslock configuration and key sending*/
 			if(CurrentKey = "CapsLock"){
 				if(KeyState = "down"){
@@ -552,9 +573,7 @@ Play(){
 			}
 		}
 		else if(SourceType = "mouse_position"){
-			x_pos := entry[3]
-			y_pos := entry[4]
-			MouseMove(x_pos, y_pos, 0)
+			MouseMove(entry.x, entry.y, 0)
 		}
 
 	}
@@ -575,26 +594,28 @@ class Controls{
 			SelectedFile := SelectedFile ".txt"
 		}
 		WriteFile := FileOpen(SelectedFile, "w")
+
 		WriteFile.WriteLine("Keyboard")
+		WriteFile.WriteLine("[")
 		for index, entry in CurrentLog.RecordLog{
-			for index2, EntryElement in entry{
-				if(index2 = entry.Length){
-					WriteFile.Write(EntryElement)
-				}
-				else WriteFile.Write(EntryElement " ")	
+			line := ""
+			for property, value in entry.OwnProps(){
+				line .= property ":" value " "
 			}
-			WriteFile.WriteLine("")
+			WriteFile.WriteLine(RTrim(line))
 		}
+		WriteFile.WriteLine("]")
+
 		WriteFile.WriteLine("Mouse")
+		WriteFile.WriteLine("[")
 		for index, entry in CurrentLog.MouseRecordLog{
-			for index2, EntryElement in entry{
-				if(index2 = entry.Length){
-					WriteFile.Write(EntryElement)
-				}
-				else WriteFile.Write(EntryElement " ")	
+			line := ""
+			for property, value in entry.OwnProps(){
+				line .= property ":" value " "
 			}
-			WriteFile.WriteLine("")
+			WriteFile.WriteLine(RTrim(line))
 		}
+		WriteFile.WriteLine("]")
 		WriteFile.Write("END")
 		WriteFile.Close()
 	}
@@ -623,6 +644,7 @@ class Controls{
 		while(true){
 			Line := ReadFile.ReadLine()
 			if(Line = "Keyboard"){
+				ReadFile.ReadLine()
 				KeyboardStartPosition := ReadFile.Pos
 				break
 			}
@@ -643,24 +665,33 @@ class Controls{
 		}
 
 	/*--------------------Actual reading of the file----------*/
+
+		
 		CurrentLog.RecordLog := []
 		CurrentLog.MouseRecordLog := []
 		ReadFile.Seek(KeyboardStartPosition,0)
 		while(true){
 			Line := ReadFile.ReadLine()
-			if(Line = "Mouse"){
+			if(Line = "]"){
 				break
 			}
 			Entry := StrSplit(Line,' ')
-			CurrentLog.RecordLog.Push(Entry)
+			CurrentLog.RecordLog.Push(CurrentLog.PushableEntryMaker(Entry))
 		}
 		while(true){
 			Line := ReadFile.ReadLine()
-			if(Line = "END"){
+			if(Line = "Mouse"){
+				ReadFile.ReadLine()
+				break
+			}
+		}
+		while(true){
+			Line := ReadFile.ReadLine()
+			if(Line = "]"){
 				break
 			}
 			Entry := StrSplit(Line,' ')
-			CurrentLog.MouseRecordLog.Push(Entry)
+			CurrentLog.MouseRecordLog.Push(CurrentLog.PushableEntryMaker(Entry))
 		}
 		ReadFile.Close()
 		MsgBox "Succesfull Load","",262144
