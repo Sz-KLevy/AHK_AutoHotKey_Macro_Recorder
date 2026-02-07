@@ -327,95 +327,6 @@ class TimeCounter{
 
 Counter := TimeCounter()
 
-/*--------------------------------------------------------------------------Mouse outside of class------------*/
-/*------------Mouse activity recording---------*/
-/*Only runs, when recording*/
-/* Putting the activity recording to the MousHook would be possible, if we leave the hotif outside, and call the funciton when it's active
-#HotIf State.IsRecording
-/*Capture Standard Buttons (Down & Up)*/
-~LButton::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "LButton",State: "down"})
-}
-~LButton Up::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "LButton",State: "up"})
-}
-
-~RButton::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "RButton",State: "down"})
-}
-~RButton Up::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "RButton",State: "up"})
-}
-
-~MButton::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "MButton",State: "down"})
-}
-~MButton Up::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "MButton",State: "up"})
-}
-
-/* Capture Side Buttons (XButtons) */
-~XButton1::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "XButton1",State: "down"})
-}
-~XButton1 Up::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "XButton1",State: "up"})
-}
-
-~XButton2::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "XButton2",State: "down"})
-}
-~XButton2 Up::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "XButton2",State: "up"})
-}
-
-/* Capture Scroll Wheel */	;While in other mouse activity, the position may be relevant, I'm doubtfull that it is relevant here, but for consistency I record the position here too
-~WheelUp::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "WheelUp",State: "down"})
-}
-~WheelDown::{
-CoordMode "Mouse", CurrentSetting.MousePositionMode
-MouseGetPos(&xpos,&ypos)
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
-CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: "WheelDown",State: "down"})
-}
-
-#HotIf ;
-
-
 class Controls{
 	static Setup(){
 		DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr") ; Fixes mouse offset issues
@@ -503,7 +414,8 @@ class Controls{
 			State.KeysDown.Clear()
 			
 			Counter.Start()
-			SetTimer Controls.Record.MouseHook.MousePositionLogger.Bind(this), CurrentSetting.MouseRecordingFrequency
+			SetTimer Controls.Record.MouseHook.LogPosition.Bind(this), CurrentSetting.MouseRecordingFrequency
+			this.MouseHook.EnableCaptureButtons()
 			this.Hook.ih.Start()
 			AppGUI.Main.UpdateStatus(State)
 		}
@@ -517,8 +429,9 @@ class Controls{
 			global Counter
 		
 			State.IsRecording := false
-			SetTimer Controls.Record.MouseHook.MousePositionLogger.Bind(this), 0
-		
+			SetTimer Controls.Record.MouseHook.LogPosition.Bind(this), 0
+			Controls.Record.MouseHook.DisableCaptureButtons()
+
 			/*Unstuck keys*/
 			for KeyName, IsDown in State.KeysDown{
 				if(IsDown){
@@ -570,7 +483,7 @@ class Controls{
 		class MouseHook{		
 			/*Mouse position recording*/
 			/*Works fine for now, but might change it to either record position if it moved x pixels*/
-			static MousePositionLogger(){
+			static LogPosition(){
 				global Counter
 				global CurrentLog
 				global CurrentSetting
@@ -578,6 +491,61 @@ class Controls{
 				CoordMode "Mouse", CurrentSetting.MousePositionMode
 				MouseGetPos(&xpos,&ypos)
 				CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: xpos,y: ypos})
+			}
+
+			static EnableCaptureButtons(){	; Could be written in a for loop like: for key in [LButton, RButton...]{Hotkey "~" key, ...}
+				/*Capture Standard Buttons (Down & Up)*/
+				Hotkey "~LButton", this.OnDown.Bind(this, "LButton"), "On"
+				Hotkey "~LButton Up", this.OnUp.Bind(this, "LButton"), "On"
+
+				Hotkey "~RButton", this.OnDown.Bind(this, "RButton"), "On"
+				Hotkey "~RButton Up", this.OnUp.Bind(this, "RButton"), "On"
+
+				Hotkey "~MButton", this.OnDown.Bind(this, "MButton"), "On"
+				Hotkey "~MButton Up", this.OnUp.Bind(this, "MButton"), "On"
+
+				Hotkey "~XButton1", this.OnDown.Bind(this, "XButton1"), "On"
+				Hotkey "~XButton1 Up", this.OnUp.Bind(this, "XButton1"), "On"
+
+				Hotkey "~XButton2", this.OnDown.Bind(this, "XButton2"), "On"
+				Hotkey "~XButton2 Up", this.OnUp.Bind(this, "XButton2"), "On"
+				
+				Hotkey "~WheelUp", this.OnDown.Bind(this, "WheelUp"), "On"
+				Hotkey "~WheelDown", this.OnDown.Bind(this, "WheelDown"), "On"
+			}
+
+			static DisableCaptureButtons(){	; Could be written in a for loop
+				Hotkey "~LButton", "Off"
+				Hotkey "~LButton Up", "Off"
+
+				Hotkey "~RButton", "Off"
+				Hotkey "~RButton Up", "Off"
+
+				Hotkey "~MButton", "Off"
+				Hotkey "~MButton Up", "Off"
+
+				Hotkey "~XButton1", "Off"
+				Hotkey "~XButton1 Up", "Off"
+
+				Hotkey "~XButton2", "Off"
+				Hotkey "~XButton2 Up", "Off"
+				
+				Hotkey "~WheelUp", "Off"
+				Hotkey "~WheelDown", "Off"
+			}
+
+			static OnDown(key, *){
+				global Counter
+				global CurrentLog
+				this.LogPosition()
+				CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: key,State: "down"})
+			}
+
+			static OnUp(key, *){
+				global Counter
+				global CurrentLog
+				this.LogPosition()
+				CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: key,State: "up"})
 			}
 		}
 	}
