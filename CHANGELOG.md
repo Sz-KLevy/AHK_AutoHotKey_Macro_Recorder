@@ -3,7 +3,12 @@
 ## [Unreleased]
 - More options
 - Add record editing
-- Credits
+- See more under Issues
+
+## [v1.3-alpha] - 2026-02-02
+- The logging now uses objects, instead of arrays in array.
+- The save/load got reworked, now they use a more JSON like format.
+- Version is a variable now, not a magic string.
 
 ## [v1.2-alpha] - 2026-02-01
 - Added credits
