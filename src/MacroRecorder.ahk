@@ -349,7 +349,7 @@ class Controls{
 		SetStoreCapsLockMode(false)
 		SetKeyDelay -1, -1
 		CombinedLog := CurrentLog.MergeLogs()
-	
+		
 		if(CombinedLog.Length = 0){
 			MsgBox "No recording found","",262144
 			return
@@ -397,6 +397,8 @@ class Controls{
 	}
 
 	class Record{
+		static MouseTimer := 0
+
 		static Start(){
 			; Prevents double starts
 			if(State.IsRecording or State.IsPlaying){
@@ -414,7 +416,8 @@ class Controls{
 			State.KeysDown.Clear()
 			
 			Counter.Start()
-			SetTimer Controls.Record.MouseHook.LogPosition.Bind(this), CurrentSetting.MouseRecordingFrequency
+			Controls.Record.MouseTimer := Controls.Record.MouseHook.LogPosition.Bind(this)
+			SetTimer Controls.Record.MouseTimer, CurrentSetting.MouseRecordingFrequency
 			this.MouseHook.EnableCaptureButtons()
 			this.Hook.ih.Start()
 			AppGUI.Main.UpdateStatus(State)
@@ -429,7 +432,7 @@ class Controls{
 			global Counter
 		
 			State.IsRecording := false
-			SetTimer Controls.Record.MouseHook.LogPosition.Bind(this), 0
+			SetTimer Controls.Record.MouseTimer, 0
 			Controls.Record.MouseHook.DisableCaptureButtons()
 
 			/*Unstuck keys*/
@@ -555,13 +558,15 @@ class Controls{
 			return
 		}
 		global CurrentLog
-		
+		global Version
+
 		SelectedFile := FileSelect("S",,"Select a file to save as.", "*.txt")
 		if(SubStr(SelectedFile, -4) != ".txt"){
 			SelectedFile := SelectedFile ".txt"
 		}
 		WriteFile := FileOpen(SelectedFile, "w")
 
+		WriteFile.WriteLine(Version)
 		WriteFile.WriteLine("Keyboard")
 		WriteFile.WriteLine("[")
 		for index, entry in CurrentLog.RecordLog{
