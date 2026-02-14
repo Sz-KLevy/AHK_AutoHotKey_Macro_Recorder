@@ -10,7 +10,13 @@ class Setting{
 	RecordStartKey := "F1"
 	RecordEndKey := "F1"	; A fake hotkey, from the user perspective, it works as one
 	PlayStartKey := "F2"
+	PlayStopKey := "F3"
 	MousePositionMode := "Screen"
+
+	RecordMouse := 1
+	RecordKeyboard := 1
+	DisableMouseDuringPlay := 1
+	DisableKeyboardDuringPlay := 1
 
 	MouseRecordingFrequency := 20
 }
@@ -193,24 +199,48 @@ class AppGUI{
 			this.Window := Gui("+AlwaysOnTop", "Macro Recorder Options", this)	; Assigning AppGUI.Options as an event handler
 			this.Window.SetFont("s10")
 
-			this.Window.AddText("w120", "Record Start Hotkey:")
-			this.Settings["RecordStart"] := this.Window.AddEdit("w120", CurrentSetting.RecordStartKey)
+			this.Window.AddText("Section w120", "Record Start Hotkey:")
+			this.Settings["RecordStart"] := this.Window.AddEdit("w120")
 
 			this.Window.AddText("w120", "Record End Hotkey:")
-			this.Settings["RecordEnd"] := this.Window.AddEdit("w120", CurrentSetting.RecordEndKey)
+			this.Settings["RecordEnd"] := this.Window.AddEdit("w120")
 
 			this.Window.AddText("w120", "Play Hotkey:")
-			this.Settings["Play"] := this.Window.AddEdit("w120", CurrentSetting.PlayStartKey)
+			this.Settings["Play"] := this.Window.AddEdit("w120")
 
 			this.Window.AddText("w120", "MouseMode:")
 			this.Settings["MouseMode"] := this.Window.AddDropDownList("w120", ["Screen", "Window", "Client"])
-			this.Settings["MouseMode"].Text := CurrentSetting.MousePositionMode
 
-			UpdateSettingsButton := this.Window.AddButton("w120", "Update settings")
+			this.Window.AddText("Section w120 xs+240 ys", "Record mouse")
+			this.Settings["RecordMouse"] := this.Window.AddCheckbox("x+-25")
+
+			this.Window.AddText("w120 xs", "Record keyboard")
+			this.Settings["RecordKeyboard"] := this.Window.AddCheckbox("x+-10")
+
+			this.Window.AddText("w120 xs", "Disable mouse during play")
+			this.Settings["DisableMouseDuringPlay"] := this.Window.AddCheckbox("x+-25")
+
+			this.Window.AddText("w120 xs", "Disable keyboard during play")
+			this.Settings["DisableKeyboardDuringPlay"] := this.Window.AddCheckbox("x+-10")
+
+			UpdateSettingsButton := this.Window.AddButton("w120 xs-120 ys+245", "Update settings")
 			UpdateSettingsButton.OnEvent("Click", "UpdateSettings")
 		}
 
+		static UpdateMenu(){
+			global CurrentSetting
+			this.Settings["RecordStart"].Text := CurrentSetting.RecordStartKey
+			this.Settings["RecordEnd"].Text := CurrentSetting.RecordEndKey
+			this.Settings["Play"].Text := CurrentSetting.PlayStartKey
+			this.Settings["MouseMode"].Text := CurrentSetting.MousePositionMode
+			this.Settings["RecordMouse"].Value := CurrentSetting.RecordMouse
+			this.Settings["RecordKeyboard"].Value := CurrentSetting.RecordKeyboard
+			this.Settings["DisableMouseDuringPlay"].Value := CurrentSetting.DisableMouseDuringPlay
+			this.Settings["DisableKeyboardDuringPlay"].Value := CurrentSetting.DisableKeyboardDuringPlay
+		}
+
 		static Show(){
+			this.UpdateMenu()
 			this.Window.Show("Center w400 h300")
 			
 		}
@@ -234,13 +264,13 @@ class AppGUI{
 
 			; Installing new hotkeys
 			Try{
-				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Controls.Record.Start(), "On")	;Checks, if the key could be a hotkey, removes it's function instantly if it can
+				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Controls.Record.Stop(), "On")
 			}
 			Catch{
 				MsgBox "Failed to change Record End Hotkey","Error",262144
+				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Controls.Record.Stop(), "On")
 			}
 			Else{
-				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, "Off")
 				CurrentSetting.RecordEndKey := AppGUI.Options.Settings["RecordEnd"].Text
 			}
 
@@ -266,7 +296,14 @@ class AppGUI{
 				CurrentSetting.PlayStartKey := AppGUI.Options.Settings["Play"].Text
 			}
 
+			; Updating settings
 			CurrentSetting.MousePositionMode := AppGUI.Options.Settings["MouseMode"].Text
+			CurrentSetting.RecordMouse := AppGUI.Options.Settings["RecordMouse"].Value
+			CurrentSetting.RecordKeyboard := AppGUI.Options.Settings["RecordKeyboard"].Value
+			CurrentSetting.DisableMouseDuringPlay := AppGUI.Options.Settings["DisableMouseDuringPlay"].Value
+			CurrentSetting.DisableKeyboardDuringPlay := AppGUI.Options.Settings["DisableKeyboardDuringPlay"].Value
+
+			this.UpdateMenu()
 		}
 	}
 	
@@ -416,25 +453,35 @@ class Controls{
 			State.KeysDown.Clear()
 			
 			Counter.Start()
-			Controls.Record.MouseTimer := Controls.Record.MouseHook.LogPosition.Bind(this)
-			SetTimer Controls.Record.MouseTimer, CurrentSetting.MouseRecordingFrequency
-			this.MouseHook.EnableCaptureButtons()
-			this.Hook.ih.Start()
+			if(CurrentSetting.RecordMouse = 1){
+				Controls.Record.MouseTimer := Controls.Record.MouseHook.LogPosition.Bind(this)
+				SetTimer Controls.Record.MouseTimer, CurrentSetting.MouseRecordingFrequency
+				this.MouseHook.EnableCaptureButtons()
+			}
+			if(CurrentSetting.RecordKeyboard = 1){
+				this.Hook.ih.Start()
+			}
 			AppGUI.Main.UpdateStatus(State)
 		}
 		static Stop(){
 			if(State.IsRecording = true){
-				this.Hook.ih.Stop()
+				global CurrentSetting
+				if(CurrentSetting.RecordKeyboard = 1){
+					this.Hook.ih.Stop()
+				}
+				if(CurrentSetting.RecordMouse = 1){
+					SetTimer Controls.Record.MouseTimer, 0
+					Controls.Record.MouseHook.DisableCaptureButtons()
+				}
+				Sleep(40)	; Needs to sleep, in order to prevent auto start on end
+				State.IsRecording := false
+				AppGUI.Main.UpdateStatus(State)
 			}
 		}
 		static OnRecordEnd(func_ih){
 			global CurrentLog
 			global Counter
-		
-			State.IsRecording := false
-			SetTimer Controls.Record.MouseTimer, 0
-			Controls.Record.MouseHook.DisableCaptureButtons()
-
+			
 			/*Unstuck keys*/
 			for KeyName, IsDown in State.KeysDown{
 				if(IsDown){
@@ -442,7 +489,6 @@ class Controls{
 				}
 			}
 			State.KeysDown.Clear()
-			AppGUI.Main.UpdateStatus(State)
 		}
 		class Hook{
 			/*----------------Keyboard inputs-----------------------*/
