@@ -258,39 +258,39 @@ class AppGUI{
 
 
 			; Deleting previous hotkeys
-			Hotkey(CurrentSetting.RecordStartKey, "Off")
-			Hotkey(CurrentSetting.PlayStartKey, "Off")
-			Hotkey(CurrentSetting.RecordEndKey, "Off")
+			HotkeyManager.RemoveAll(CurrentSetting.RecordStartKey)
+			HotkeyManager.RemoveAll(CurrentSetting.PlayStartKey)
+			HotkeyManager.RemoveAll(CurrentSetting.RecordEndKey)
 
 			; Installing new hotkeys
 			Try{
-				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Controls.Record.Stop(), "On")
+				HotkeyManager.Add(AppGUI.Options.Settings["RecordEnd"].Text, Controls.Record.Stop.Bind(Controls.Record))
 			}
 			Catch{
 				MsgBox "Failed to change Record End Hotkey","Error",262144
-				Hotkey(AppGUI.Options.Settings["RecordEnd"].Text, (hk) => Controls.Record.Stop(), "On")
+				HotkeyManager.Add(AppGUI.Options.Settings["RecordEnd"].Text, Controls.Record.Stop.Bind(Controls.Record))
 			}
 			Else{
 				CurrentSetting.RecordEndKey := AppGUI.Options.Settings["RecordEnd"].Text
 			}
 
 			Try{
-				Hotkey(AppGUI.Options.Settings["RecordStart"].Text, (hk) => Controls.Record.Start(), "On")
+				HotkeyManager.Add(AppGUI.Options.Settings["RecordStart"].Text, Controls.Record.Start.Bind(Controls.Record))
 			}
 			Catch{
 				MsgBox "Failed to change Record Start Hotkey","Error",262144
-				Hotkey(CurrentSetting.RecordStartKey, (hk) => Controls.Record.Start(), "On")
+				HotkeyManager.Add(CurrentSetting.RecordStartKey, Controls.Record.Start.Bind(Controls.Record))
 			}
 			Else{
 				CurrentSetting.RecordStartKey := AppGUI.Options.Settings["RecordStart"].Text
 			}
 
 			Try{
-				Hotkey(AppGUI.Options.Settings["Play"].Text, (hk) => Controls.Play(), "On")
+				HotkeyManager.Add(AppGUI.Options.Settings["Play"].Text, Controls.Play.Bind(Controls))
 			}
 			Catch{
 				MsgBox "Failed to change Play Start Key","Error",262144
-				Hotkey(CurrentSetting.PlayStartKey, (hk) => Controls.Play(), "On")
+				HotkeyManager.Add(CurrentSetting.PlayStartKey, Controls.Play.Bind(Controls))
 			}
 			Else{
 				CurrentSetting.PlayStartKey := AppGUI.Options.Settings["Play"].Text
@@ -367,8 +367,8 @@ Counter := TimeCounter()
 class Controls{
 	static Setup(){
 		DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr") ; Fixes mouse offset issues
-		Hotkey(CurrentSetting.RecordStartKey,(ThisHotKey) => Controls.Record.Start())
-		Hotkey(CurrentSetting.PlayStartKey,(ThisHotKey) => Controls.Play())
+		HotkeyManager.Add(CurrentSetting.RecordStartKey, Controls.Record.Start.Bind(Controls.Record))
+		HotkeyManager.Add(CurrentSetting.PlayStartKey, Controls.Play.Bind(Controls))
 		this.Record.Hook.Build()
 		AppGUI.BuildAll()
 		AppGUI.Main.Show()
@@ -716,7 +716,40 @@ class Controls{
 	}
 }
 
+class HotkeyManager{
+	static Handlers := map()
 
+	static Add(key,function){
+		if(!this.Handlers.Has(key)){
+			this.Handlers[key] := []
+			Hotkey(key, this.Dispatch.Bind(this, key))
+		}
+		this.Handlers[key].Push(function)
+	}
+
+	static Remove(key,function){
+		if(!this.Handlers.Has(key)){
+			return
+		}
+		for i, f in this.Handlers[key]{
+			if(f=function){
+				this.Handlers.RemoveAt(i)
+				break
+			}
+		}
+	}
+
+	static RemoveAll(key){
+		this.Handlers[key] := []
+	}
+
+	static Dispatch(key,*){
+		for function in this.Handlers[key]{
+			function()
+		}
+	}
+
+}
 
 
 
