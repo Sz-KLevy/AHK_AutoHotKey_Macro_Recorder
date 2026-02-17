@@ -258,9 +258,9 @@ class AppGUI{
 
 
 			; Deleting previous hotkeys
-			HotkeyManager.RemoveAll(CurrentSetting.RecordStartKey)
-			HotkeyManager.RemoveAll(CurrentSetting.PlayStartKey)
-			HotkeyManager.RemoveAll(CurrentSetting.RecordEndKey)
+			HotkeyManager.RemoveHotkey(CurrentSetting.RecordStartKey)
+			HotkeyManager.RemoveHotkey(CurrentSetting.PlayStartKey)
+			HotkeyManager.RemoveHotkey(CurrentSetting.RecordEndKey)
 
 			; Installing new hotkeys
 			Try{
@@ -367,6 +367,7 @@ Counter := TimeCounter()
 class Controls{
 	static Setup(){
 		DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr") ; Fixes mouse offset issues
+		HotkeyManager.Add(CurrentSetting.RecordEndKey, Controls.Record.Stop.Bind(Controls.Record))
 		HotkeyManager.Add(CurrentSetting.RecordStartKey, Controls.Record.Start.Bind(Controls.Record))
 		HotkeyManager.Add(CurrentSetting.PlayStartKey, Controls.Play.Bind(Controls))
 		this.Record.Hook.Build()
@@ -464,7 +465,8 @@ class Controls{
 			AppGUI.Main.UpdateStatus(State)
 		}
 		static Stop(){
-			if(State.IsRecording = true){
+			Thread "Priority", 100
+			if(State.IsRecording){
 				global CurrentSetting
 				if(CurrentSetting.RecordKeyboard = 1){
 					this.Hook.ih.Stop()
@@ -473,9 +475,9 @@ class Controls{
 					SetTimer Controls.Record.MouseTimer, 0
 					Controls.Record.MouseHook.DisableCaptureButtons()
 				}
-				Sleep(40)	; Needs to sleep, in order to prevent auto start on end
 				State.IsRecording := false
 				AppGUI.Main.UpdateStatus(State)
+				return "break"
 			}
 		}
 		static OnRecordEnd(func_ih){
@@ -508,10 +510,7 @@ class Controls{
 				global CurrentLog
 				global Counter
 			
-				if (KeyName = CurrentSetting.RecordEndKey){
-					Controls.Record.Stop()
-				}
-				else if(KeyName != CurrentSetting.PlayStartKey && KeyName != CurrentSetting.RecordStartKey && State.KeysDown.Has(KeyName) = false){
+				if(KeyName != CurrentSetting.PlayStartKey && KeyName != CurrentSetting.RecordStartKey && KeyName != CurrentSetting.RecordEndKey && State.KeysDown.Has(KeyName) = false){
 					CurrentLog.RecordLog.Push({Time: Counter.Time(),Type: "key",Key: KeyName,State: "down"})
 					State.KeysDown[KeyName] := true
 				}
@@ -723,6 +722,7 @@ class HotkeyManager{
 		if(!this.Handlers.Has(key)){
 			this.Handlers[key] := []
 			Hotkey(key, this.Dispatch.Bind(this, key))
+			Hotkey(key, "On")
 		}
 		this.Handlers[key].Push(function)
 	}
@@ -733,7 +733,7 @@ class HotkeyManager{
 		}
 		for i, f in this.Handlers[key]{
 			if(f=function){
-				this.Handlers.RemoveAt(i)
+				this.Handlers[key].RemoveAt(i)
 				break
 			}
 		}
@@ -743,9 +743,19 @@ class HotkeyManager{
 		this.Handlers[key] := []
 	}
 
+	static RemoveHotkey(key){
+		try{
+			this.Handlers.Delete(key)
+			Hotkey(key, "Off")
+		}
+	}
+
 	static Dispatch(key,*){
+		Thread "Priority", -100
 		for function in this.Handlers[key]{
-			function()
+			if("break" = function()){
+				break
+			}
 		}
 	}
 
