@@ -15,8 +15,6 @@ class Setting{
 
 	RecordMouse := 1
 	RecordKeyboard := 1
-	DisableMouseDuringPlay := 1
-	DisableKeyboardDuringPlay := 1
 
 	MouseRecordingFrequency := 20
 }
@@ -217,12 +215,6 @@ class AppGUI{
 			this.Window.AddText("w120 xs", "Record keyboard")
 			this.Settings["RecordKeyboard"] := this.Window.AddCheckbox("x+-10")
 
-			this.Window.AddText("w120 xs", "Disable mouse during play")
-			this.Settings["DisableMouseDuringPlay"] := this.Window.AddCheckbox("x+-25")
-
-			this.Window.AddText("w120 xs", "Disable keyboard during play")
-			this.Settings["DisableKeyboardDuringPlay"] := this.Window.AddCheckbox("x+-10")
-
 			UpdateSettingsButton := this.Window.AddButton("w120 xs-120 ys+245", "Update settings")
 			UpdateSettingsButton.OnEvent("Click", "UpdateSettings")
 		}
@@ -235,8 +227,6 @@ class AppGUI{
 			this.Settings["MouseMode"].Text := CurrentSetting.MousePositionMode
 			this.Settings["RecordMouse"].Value := CurrentSetting.RecordMouse
 			this.Settings["RecordKeyboard"].Value := CurrentSetting.RecordKeyboard
-			this.Settings["DisableMouseDuringPlay"].Value := CurrentSetting.DisableMouseDuringPlay
-			this.Settings["DisableKeyboardDuringPlay"].Value := CurrentSetting.DisableKeyboardDuringPlay
 		}
 
 		static Show(){
@@ -300,8 +290,6 @@ class AppGUI{
 			CurrentSetting.MousePositionMode := AppGUI.Options.Settings["MouseMode"].Text
 			CurrentSetting.RecordMouse := AppGUI.Options.Settings["RecordMouse"].Value
 			CurrentSetting.RecordKeyboard := AppGUI.Options.Settings["RecordKeyboard"].Value
-			CurrentSetting.DisableMouseDuringPlay := AppGUI.Options.Settings["DisableMouseDuringPlay"].Value
-			CurrentSetting.DisableKeyboardDuringPlay := AppGUI.Options.Settings["DisableKeyboardDuringPlay"].Value
 
 			this.UpdateMenu()
 		}
