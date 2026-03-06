@@ -1,9 +1,12 @@
 # Changelog
 
 ## [Unreleased]
-- More options
 - Add record editing
 - See more under Issues
+
+## [v1.5-alpha] - 2026-03-06
+- Added more options
+- The main model will be put on hold, as focus will be on the new QA-Recorder 
 
 ## [v1.4-alpha] - 2026-02-07
 - Control class got a rework, with a setup function, record class and play function
