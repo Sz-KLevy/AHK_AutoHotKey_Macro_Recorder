@@ -4,7 +4,7 @@
 
 /*-----------------------------------------------Code---------------------------*/
 /*--------------------------------------Variables, options and such--------------------------*/
-Version := "0.0"
+Version := "0.1"
 
 class Setting{
 	RecordStartKey := "F1"
@@ -81,6 +81,67 @@ class DataLog{
 			}
 		return PushableEntry
 	}
+
+	Simplify(CombinedLog){
+		SimplifiedLog := []
+
+		first := -1
+		last_pos:={x:-1, y:-1, index:-1}
+
+		for index, entry in CombinedLog{
+			if(entry.Type = "key"){
+				try{
+					if(!(CombinedLog[index-1].Type = "key")){
+						if(!(last_pos.index != first && last_pos.x = CombinedLog[first].x && last_pos.y = CombinedLog[first].y)){
+							SimplifiedLog.push(CombinedLog[first])
+							last_pos.x := CombinedLog[first].x
+							last_pos.y := CombinedLog[first].y
+							last_pos.index := first
+						}
+						if(!(last_pos.x = CombinedLog[index-1].x && last_pos.y = CombinedLog[index-1].y)){
+							SimplifiedLog.push(CombinedLog[index-1])
+							last_pos.x := CombinedLog[index-1].x
+							last_pos.y := CombinedLog[index-1].y
+							last_pos.index := index-1
+						}
+						first := -1
+					}
+				}
+				SimplifiedLog.push(CombinedLog[index])
+			}
+			else if(index = CombinedLog.length){
+				try{
+					if(!(last_pos.index != first && last_pos.x = CombinedLog[first].x && last_pos.y = CombinedLog[first].y)){
+						SimplifiedLog.push(CombinedLog[first])
+						last_pos.x := CombinedLog[first].x
+						last_pos.y := CombinedLog[first].y
+						last_pos.index := first
+					}
+					if(!(last_pos.x = CombinedLog[index].x && last_pos.y = CombinedLog[index].y)){
+						SimplifiedLog.push(CombinedLog[index])
+						last_pos.x := CombinedLog[index].x
+						last_pos.y := CombinedLog[index].y
+						last_pos.index := index
+					}
+				}
+				catch{
+					SimplifiedLog.push(CombinedLog[index])
+				}
+			}
+			else{
+				if(first = -1){
+					first := index
+				}
+				if(last_pos.index=-1){
+					last_pos.x := CombinedLog[index].x
+					last_pos.y := CombinedLog[index].y
+					last_pos.index := index
+				}
+			}
+		}
+
+		return SimplifiedLog
+	}
 }
 
 CurrentLog := DataLog()
@@ -93,6 +154,7 @@ class AppGUI{
 	static BuildAll(){
 		AppGUI.Main.Build()
 		AppGUI.Options.Build()
+		AppGUI.Save.Build()
 		AppGUI.Credits.Build()
 	}
 
@@ -111,7 +173,7 @@ class AppGUI{
 			RecordEndButton := this.Window.AddButton("w50" height " X+" , "Stop Recording")
 			PlayButton := this.Window.AddButton(width height " X+", "Play")
 			SaveButton := this.Window.AddButton(width height " X+", "Save")
-			LoadButton := this.Window.AddButton(width height " X+", "Load")
+			LoadButton := this.Window.AddButton(width height " X+", "Load Complex")
 			this.CurrentStatusText := this.Window.AddText("w400 h40 XM X0 Center", "Status: Idle")
 
 			width := "w" 400//3
@@ -156,7 +218,7 @@ class AppGUI{
 		}
 
 		static ButtonSave(*){
-			Controls.Save()
+			AppGUI.Save.Show()
 		}
 		static ButtonLoad(*){
 			Controls.Load()
@@ -292,6 +354,35 @@ class AppGUI{
 			CurrentSetting.RecordKeyboard := AppGUI.Options.Settings["RecordKeyboard"].Value
 
 			this.UpdateMenu()
+		}
+	}
+	class Save{
+		static Window := ""
+
+		static Build(){
+			global CurrentSetting
+			this.Window := Gui("+AlwaysOnTop", "Macro Recorder Options", this)	; Assigning AppGUI.Options as an event handler
+			this.Window.SetFont("s10")
+			SaveComplexButton := this.Window.AddButton(10 10 " X+", "Save Complex")
+			SaveSimpleButton := this.Window.AddButton(10 10 " X+", "Save Simple")
+			SaveComplexButton.OnEvent("Click", "ButtonSaveComplex")
+			SaveSimpleButton.OnEvent("Click", "ButtonSaveSimple")
+		}
+
+		static Show(){
+			this.Window.Show("Center w400 h300")
+			
+		}
+
+		static Hide(){
+			this.Window.Hide()
+		}
+
+		static ButtonSaveComplex(*){
+			Controls.Save.Complex()
+		}
+		static ButtonSaveSimple(*){
+			Controls.Save.Simple()
 		}
 	}
 	
@@ -586,43 +677,72 @@ class Controls{
 		}
 	}
 
-	static Save(){
-		if(State.IsRecording or State.IsPlaying){
-			return
-		}
-		global CurrentLog
-		global Version
-
-		SelectedFile := FileSelect("S",,"Select a file to save as.", "*.txt")
-		if(SubStr(SelectedFile, -4) != ".txt"){
-			SelectedFile := SelectedFile ".txt"
-		}
-		WriteFile := FileOpen(SelectedFile, "w")
-
-		WriteFile.WriteLine(Version)
-		WriteFile.WriteLine("Keyboard")
-		WriteFile.WriteLine("[")
-		for index, entry in CurrentLog.RecordLog{
-			line := ""
-			for property, value in entry.OwnProps(){
-				line .= property ":" value " "
+	class Save{
+		static Complex(){
+			if(State.IsRecording or State.IsPlaying){
+				return
 			}
-			WriteFile.WriteLine(RTrim(line))
-		}
-		WriteFile.WriteLine("]")
+			global CurrentLog
+			global Version
 
-		WriteFile.WriteLine("Mouse")
-		WriteFile.WriteLine("[")
-		for index, entry in CurrentLog.MouseRecordLog{
-			line := ""
-			for property, value in entry.OwnProps(){
-				line .= property ":" value " "
+			SelectedFile := FileSelect("S",,"Select a file to save as.", "*.txt")
+			if(SubStr(SelectedFile, -4) != ".txt"){
+				SelectedFile := SelectedFile ".txt"
 			}
-			WriteFile.WriteLine(RTrim(line))
+			WriteFile := FileOpen(SelectedFile, "w")
+
+			WriteFile.WriteLine(Version)
+			WriteFile.WriteLine("Keyboard")
+			WriteFile.WriteLine("[")
+			for index, entry in CurrentLog.RecordLog{
+				line := ""
+				for property, value in entry.OwnProps(){
+					line .= property ":" value " "
+				}
+				WriteFile.WriteLine(RTrim(line))
+			}
+			WriteFile.WriteLine("]")
+
+			WriteFile.WriteLine("Mouse")
+			WriteFile.WriteLine("[")
+			for index, entry in CurrentLog.MouseRecordLog{
+				line := ""
+				for property, value in entry.OwnProps(){
+					line .= property ":" value " "
+				}
+				WriteFile.WriteLine(RTrim(line))
+			}
+			WriteFile.WriteLine("]")
+			WriteFile.Write("END")
+			WriteFile.Close()
 		}
-		WriteFile.WriteLine("]")
-		WriteFile.Write("END")
-		WriteFile.Close()
+
+		static Simple(){
+			if(State.IsRecording or State.IsPlaying){
+				return
+			}
+			global CurrentLog
+
+			SelectedFile := FileSelect("S",,"Select a file to save as.", "*.txt")
+			if(SubStr(SelectedFile, -4) != ".txt"){
+				SelectedFile := SelectedFile ".txt"
+			}
+			WriteFile := FileOpen(SelectedFile, "w")
+
+			CombinedLog := CurrentLog.Simplify(CurrentLog.MergeLogs())
+
+			for index, entry in CombinedLog{
+				line := ""
+				if(entry.Type = "key"){
+					line := "Time:" entry.Time " Type:" entry.Type " Key:" entry.Key " State:" entry.State
+				}
+				else if(entry.type = "mouse_position"){
+					line := "Time:" entry.Time " Type:" entry.Type " x:" entry.x " y:" entry.y
+				}
+				WriteFile.WriteLine(line)
+			}
+			WriteFile.Close()
+		}
 	}
 
 	static Load(){
