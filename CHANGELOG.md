@@ -6,7 +6,9 @@
 
 ## [v1.5-alpha] - 2026-03-06
 - Added more options
-- The main model will be put on hold, as focus will be on the new QA-Recorder 
+- Development focus will be on the new QA-Recorder
+    - The main model will receive fewer updates
+    - The updates of the main model will be derived from the QA (, you can imagine this as a prerelease, and you wouldn't be far off)
 
 ## [v1.4-alpha] - 2026-02-07
 - Control class got a rework, with a setup function, record class and play function
@@ -15,7 +17,7 @@
 ## [v1.3-alpha] - 2026-02-02
 - The logging now uses objects, instead of arrays in array
 - The save/load got reworked, now they use a more JSON like format
-- Version is a variable now, not a magic string.
+- Version is a variable now, not a magic string
 
 ## [v1.2-alpha] - 2026-02-01
 - Added credits
