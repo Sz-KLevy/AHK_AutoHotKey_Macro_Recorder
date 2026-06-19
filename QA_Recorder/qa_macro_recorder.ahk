@@ -4,7 +4,7 @@
 
 /*-----------------------------------------------Code---------------------------*/
 /*--------------------------------------Variables, options and such--------------------------*/
-Version := "0.1"
+Version := "0.2"
 
 class Setting{
 	RecordStartKey := "F1"
@@ -16,7 +16,7 @@ class Setting{
 	RecordMouse := 1
 	RecordKeyboard := 1
 
-	MouseRecordingFrequency := 20
+	MouseRecordingFrequency := 2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 }
 DefaultSetting := Setting()
 
@@ -450,6 +450,7 @@ class Controls{
 		HotkeyManager.Add(CurrentSetting.RecordStartKey, Controls.Record.Start.Bind(Controls.Record))
 		HotkeyManager.Add(CurrentSetting.PlayStartKey, Controls.Play.Bind(Controls))
 		this.Record.Hook.Build()
+		this.Record.MouseHook.MouseDelta.Setup()
 		AppGUI.BuildAll()
 		AppGUI.Main.Show()
 	}
@@ -504,7 +505,7 @@ class Controls{
 				}
 			}
 			else if(SourceType = "mouse_position"){
-				MouseMove(entry.x, entry.y, 0)
+				MouseMove(entry.x, entry.y, 0, "R")
 			}
 	
 		}
@@ -537,6 +538,7 @@ class Controls{
 				Controls.Record.MouseTimer := Controls.Record.MouseHook.LogPosition.Bind(this)
 				SetTimer Controls.Record.MouseTimer, CurrentSetting.MouseRecordingFrequency
 				this.MouseHook.EnableCaptureButtons()
+				OnMessage(0xFF, this.MouseHook.MouseDelta.callback)
 			}
 			if(CurrentSetting.RecordKeyboard = 1){
 				this.Hook.ih.Start()
@@ -553,6 +555,7 @@ class Controls{
 				if(CurrentSetting.RecordMouse = 1){
 					SetTimer Controls.Record.MouseTimer, 0
 					Controls.Record.MouseHook.DisableCaptureButtons()
+					OnMessage(0xFF, this.MouseHook.MouseDelta.callback, 0)
 				}
 				State.IsRecording := false
 				AppGUI.Main.UpdateStatus(State)
@@ -673,6 +676,83 @@ class Controls{
 				global CurrentLog
 				this.LogPosition()
 				CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "key",Key: key,State: "up"})
+			}
+
+			class MouseDelta{
+
+				static callback := ObjBindMethod(this, "WM_INPUT")
+
+					static Setup(){
+					rid := Buffer(8 + A_PtrSize, 0)
+					result := 0
+
+					NumPut(
+						"UShort", 1,
+						"UShort", 2,
+						"UInt", 0x100,
+						"UPtr", A_ScriptHwnd,
+						rid
+					)
+
+					result := DllCall(
+						"RegisterRawInputDevices",
+						"Ptr", rid.Ptr,
+						"UInt", 1,
+						"UInt", rid.Size
+					)
+
+					if(result = -1){
+						MsgBox "GetRawInputData failed: " A_LastError
+						return -1
+					}
+				}
+
+				static WM_INPUT(wParam, lParam, msg, hwnd){
+
+					result := 0
+					size := 0
+
+					;Gets raw input size
+					result := DllCall(
+						"GetRawInputData",
+						"Ptr", lParam,
+						"UInt", 0x10000003,
+						"Ptr", 0,
+						"UInt*", &size,
+						"UInt", 8+2*A_PtrSize
+					)
+
+					if(result = -1){
+						MsgBox "GetRawInputData failed: " A_LastError
+						return -1
+					}	
+
+					raw := Buffer(size)
+
+					;Gets raw input
+					result := DllCall(
+						"GetRawInputData",
+						"Ptr", lParam,
+						"UInt", 0x10000003,
+						"Ptr", raw.Ptr,
+						"UInt*", &size,
+						"UInt", 8+2*A_PtrSize
+					)
+	
+					if(result = -1){
+						MsgBox "GetRawInputData failed: " A_LastError
+						return -1
+					}	
+
+					mouseStart := 8 + 2*A_PtrSize
+
+					delta_x := NumGet(raw, mouseStart+12, "Int")
+					delta_y := NumGet(raw, mouseStart+16, "Int")
+
+
+					CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: delta_x,y: delta_y})
+					ToolTip delta_x "   " delta_y
+				}
 			}
 		}
 	}
