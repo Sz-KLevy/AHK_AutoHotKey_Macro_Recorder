@@ -445,6 +445,7 @@ Counter := TimeCounter()
 
 class Controls{
 	static Setup(){
+
 		DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr") ; Fixes mouse offset issues
 		HotkeyManager.Add(CurrentSetting.RecordEndKey, Controls.Record.Stop.Bind(Controls.Record))
 		HotkeyManager.Add(CurrentSetting.RecordStartKey, Controls.Record.Start.Bind(Controls.Record))
@@ -477,7 +478,7 @@ class Controls{
 		AppGUI.Main.UpdateStatus(State)
 	
 		StartTime := A_TickCount
-	
+
 		for index,entry in CombinedLog{
 			TargetTime := entry.Time
 			SourceType := entry.Type
@@ -505,7 +506,14 @@ class Controls{
 				}
 			}
 			else if(SourceType = "mouse_position"){
-				MouseMove(entry.x, entry.y, 0, "R")
+				DllCall(
+					"mouse_event",
+					"UInt", 0x0001, ; MOUSEEVENTF_MOVE
+					"Int", entry.x,
+					"Int", entry.y,
+					"UInt", 0,
+					"UPtr", 0
+				)
 			}
 	
 		}
@@ -682,7 +690,7 @@ class Controls{
 
 				static callback := ObjBindMethod(this, "WM_INPUT")
 
-					static Setup(){
+				static Setup(){
 					rid := Buffer(8 + A_PtrSize, 0)
 					result := 0
 
@@ -691,14 +699,14 @@ class Controls{
 						"UShort", 2,
 						"UInt", 0x100,
 						"UPtr", A_ScriptHwnd,
-						rid
+						rid.Ptr
 					)
 
 					result := DllCall(
 						"RegisterRawInputDevices",
-						"Ptr", rid.Ptr,
+						"UPtr", rid.Ptr,
 						"UInt", 1,
-						"UInt", rid.Size
+						"UInt", 8 + A_PtrSize
 					)
 
 					if(result = -1){
@@ -710,16 +718,17 @@ class Controls{
 				static WM_INPUT(wParam, lParam, msg, hwnd){
 
 					result := 0
-					size := 0
+					size := 8 + (2 * A_PtrSize)
+					header := Buffer(size, 0)
 
 					;Gets raw input size
 					result := DllCall(
 						"GetRawInputData",
-						"Ptr", lParam,
-						"UInt", 0x10000003,
-						"Ptr", 0,
+						"UPtr", lParam,
+						"UInt", 0x10000005,
+						"UPtr", header.Ptr,
 						"UInt*", &size,
-						"UInt", 8+2*A_PtrSize
+						"UInt", size
 					)
 
 					if(result = -1){
@@ -727,16 +736,17 @@ class Controls{
 						return -1
 					}	
 
-					raw := Buffer(size)
+					structSize := Numget(header, 4, "UInt")
+					raw := Buffer(structSize)
 
 					;Gets raw input
 					result := DllCall(
 						"GetRawInputData",
-						"Ptr", lParam,
+						"UPtr", lParam,
 						"UInt", 0x10000003,
-						"Ptr", raw.Ptr,
-						"UInt*", &size,
-						"UInt", 8+2*A_PtrSize
+						"UPtr", raw.Ptr,
+						"UInt*", &structSize,
+						"UInt", size
 					)
 	
 					if(result = -1){
@@ -746,8 +756,8 @@ class Controls{
 
 					mouseStart := 8 + 2*A_PtrSize
 
-					delta_x := NumGet(raw, mouseStart+12, "Int")
-					delta_y := NumGet(raw, mouseStart+16, "Int")
+					delta_x := NumGet(raw, 20+2*A_PtrSize, "Int")
+					delta_y := NumGet(raw, 24+2*A_PtrSize, "Int")
 
 
 					CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: delta_x,y: delta_y})
