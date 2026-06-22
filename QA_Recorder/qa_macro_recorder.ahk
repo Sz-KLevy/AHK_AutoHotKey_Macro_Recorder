@@ -506,13 +506,19 @@ class Controls{
 				}
 			}
 			else if(SourceType = "mouse_position"){
+				static input := Buffer(40, 0)
+
+				NumPut("UInt", 0, input, 0)          ; INPUT_MOUSE
+				NumPut("Int", entry.x, input, 8)     ; dx
+				NumPut("Int", entry.y, input, 12)    ; dy
+				NumPut("UInt", 0, input, 16)         ; mouseData
+				NumPut("UInt", 0x2001, input, 20)    ; MOUSEEVENTF_MOVE | MOUSEEVENTF_MOVE_NOCOALESCE
+
 				DllCall(
-					"mouse_event",
-					"UInt", 0x0001, ; MOUSEEVENTF_MOVE
-					"Int", entry.x,
-					"Int", entry.y,
-					"UInt", 0,
-					"UPtr", 0
+					"SendInput",
+					"UInt", 1,
+					"Ptr", input.Ptr,
+					"Int", 40
 				)
 			}
 	
@@ -756,8 +762,8 @@ class Controls{
 
 					mouseStart := 8 + 2*A_PtrSize
 
-					delta_x := NumGet(raw, 20+2*A_PtrSize, "Int")
-					delta_y := NumGet(raw, 24+2*A_PtrSize, "Int")
+					delta_x := NumGet(raw, mouseStart + 12, "Int")
+					delta_y := NumGet(raw, mouseStart + 16, "Int")
 
 
 					CurrentLog.MouseRecordLog.Push({Time: Counter.Time(),Type: "mouse_position",x: delta_x,y: delta_y})
