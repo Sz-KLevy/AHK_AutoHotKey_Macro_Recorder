@@ -61,6 +61,7 @@ class DataLog{
 		}
 
 		return CombinedLog
+		;return this.SetTick(CombinedLog, 10)
 	}
 
 	PushableEntryMaker(ArrayEntry){
@@ -141,6 +142,44 @@ class DataLog{
 		}
 
 		return SimplifiedLog
+	}
+	SetTick(CombinedLog, tick){
+		for index, entry in CombinedLog{
+			if(Mod(entry.Time, tick) < tick/2){
+				CombinedLog[index].Time := entry.Time-Mod(entry.Time, tick)
+			}
+			else{
+				CombinedLog[index].Time := entry.Time+(tick-Mod(entry.Time, tick))
+			}
+		}
+		return CombinedLog
+	}
+
+	CombineSameTimeMouse(CombinedLog){
+		CombinedLog2 := []
+		i := 0
+		for index, entry in CombinedLog{
+			if(entry.Type = "mouse_position"){
+				if(i=0){
+					CombinedLog2.push(entry)
+					i := CombinedLog2.Length
+				}
+				else{
+					if(entry.Time = CombinedLog2[i].Time){
+						CombinedLog2[i].x := CombinedLog2[i].x+entry.x
+						CombinedLog2[i].y := CombinedLog2[i].y+entry.y
+					}
+					else{
+						CombinedLog2.push(entry)
+						i := CombinedLog2.Length
+					}
+				}
+			}
+			else{
+				CombinedLog2.push(entry)
+			}
+		}
+		return CombinedLog2
 	}
 }
 
